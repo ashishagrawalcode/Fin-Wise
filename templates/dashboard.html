@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard" style="color: var(--primary);">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li> 
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+            <a href="/logout" style="margin-left:10px; color:#ef4444;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="welcome-banner">
+            <h1>Welcome back, {{ username }}! 👋</h1>
+            <p style="color: var(--text-muted);">Here's your financial snapshot for today</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="left-col">
+                <div class="dash-card">
+                    <div class="net-worth-header">
+                        <span style="color:var(--text-muted); font-weight:600;">Net Worth</span>
+                        <div class="growth-tag"><i class="fa-solid fa-arrow-trend-up"></i> Growth</div>
+                    </div>
+                    <div class="big-money">
+                        <span class="privacy-blur">{{ total_balance if total_balance else '₹0' }}</span>
+                        <i class="fa-regular fa-eye-slash eye-toggle" id="privacy-eye" onclick="togglePrivacy()"></i>
+                    </div>
+
+                    <div class="money-stats-row">
+                        <div class="money-stat">
+                            <label>Monthly Income</label>
+                            <div class="money-val-green privacy-blur">{{ income if income else '₹0' }}</div>
+                        </div>
+                        <div class="money-stat">
+                            <label>Monthly Expenses</label>
+                            <div class="money-val-red privacy-blur">{{ expense if expense else '₹0' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="level-strip">
+                    <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--primary);">
+                        <span><i class="fa-solid fa-bolt"></i> Level 1</span>
+                        <span style="color:var(--text-muted); font-weight:500; font-size:0.9rem;">-500 / 500</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill"></div></div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">1000 XP to next level</div>
+                </div>
+
+                <h3 style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-bullseye" style="color:var(--primary);"></i> Active Goals
+                    <span style="margin-left:auto; font-size:0.9rem; color:var(--primary); cursor:pointer;">+ New Goal</span>
+                </h3>
+                <div class="dash-card">
+                    <div class="goal-row">
+                        <strong>Emergency Fund</strong>
+                        <span style="background:#DCFCE7; color:#16A34A; font-size:0.75rem; padding:2px 8px; border-radius:10px;">On Track</span>
+                    </div>
+                    <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Due 20/11/2026</div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
+                        <span>₹0 / ₹3,00,000</span>
+                        <span>0%</span>
+                    </div>
+                    <div class="goal-track"><div class="goal-fill"></div></div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="dash-card">
+                    <div style="font-size:0.9rem; color:var(--text-muted); margin-bottom:5px;">CIBIL Score</div>
+                    <div class="score-val">750 <span class="score-sub">Good</span></div>
+                </div>
+
+                <div class="dash-card">
+                    <div style="font-size:0.9rem; color:var(--text-muted); margin-bottom:5px;">Savings Rate</div>
+                    <div style="font-size:2rem; font-weight:800;">0%</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">of income saved</div>
+                </div>
+
+                <h4 style="margin-bottom:15px;">Quick Actions</h4>
+                <div class="quick-actions-grid">
+                    <a href="/simulations" class="action-btn">
+                        <i class="fa-solid fa-gamepad action-icon"></i>
+                        <span style="font-size:0.85rem; font-weight:600;">Start Sim</span>
+                    </a>
+                    <a href="/accounts" class="action-btn">
+                        <i class="fa-solid fa-plus action-icon"></i>
+                        <span style="font-size:0.85rem; font-weight:600;">Log Expense</span>
+                    </a>
+                    <a href="/coach" class="action-btn">
+                        <i class="fa-regular fa-comment-dots action-icon"></i>
+                        <span style="font-size:0.85rem; font-weight:600;">Chat Coach</span>
+                    </a>
+                    <a href="/goals" class="action-btn">
+                        <i class="fa-regular fa-calendar action-icon"></i>
+                        <span style="font-size:0.85rem; font-weight:600;">View Goals</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

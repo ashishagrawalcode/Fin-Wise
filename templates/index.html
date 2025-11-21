@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinWise | Master Money</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header>
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise Logo" style="height: 40px;">
+                FinWise
+            </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <button class="btn-outline" onclick="openCoach()">
+                <i class="fa-solid fa-robot" style="margin-right:5px;"></i> AI Coach
+            </button>
+            
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+        </div>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Master Money<br><span class="highlight">Through Gaming</span></h1>
+            <p>FinWise is a gamified financial literacy platform designed for Indian youth. Learn investing, budgeting, and wealth building through fun simulations.</p>
+            
+            <div class="hero-buttons">
+                <a href="#" class="btn-primary"><i class="fa-solid fa-play"></i> Start Learning</a>
+                <button class="btn-outline">Learn More</button>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-item"><h3>10+</h3><p>Simulators & Games</p></div>
+                <div class="stat-item"><h3>30+</h3><p>Badges to Unlock</p></div>
+                <div class="stat-item"><h3>₹0</h3><p>Investment Needed</p></div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="game-card">
+                <i class="fa-solid fa-gamepad"></i>
+                <div class="level-badge">Level 1</div>
+                <div class="level-sub">Financial Newbie</div>
+                <div style="margin-top:10px; font-size: 2rem;">• • •</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section">
+        <div class="section-title">
+            <h2>Why FinWise?</h2>
+            <p style="color:var(--text-muted)">Everything you need to understand money and build wealth</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon-box"><i class="fa-solid fa-gamepad"></i></div>
+                <h3>Gamified Learning</h3><p>Earn XP, unlock badges, and level up while mastering financial concepts.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: #F3E8FF; color: #9333EA;"><i class="fa-solid fa-chart-line"></i></div>
+                <h3>Market Simulations</h3><p>Trade in risk-free environments with real-time market conditions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: #E0F2FE; color: #0284C7;"><i class="fa-solid fa-brain"></i></div>
+                <h3>AI Coach</h3><p>Get personalized financial advice tailored to your situation.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: #DCFCE7; color: #16A34A;"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3>CIBIL Health</h3><p>Track and improve your credit score with actionable insights.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: #FFEDD5; color: #EA580C;"><i class="fa-solid fa-bolt"></i></div>
+                <h3>Fast Lessons</h3><p>Learn financial concepts in 2-3 minute bite-sized videos.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box" style="background: #FAE8FF; color: #C026D3;"><i class="fa-solid fa-bullseye"></i></div>
+                <h3>Smart Goals</h3><p>Set and achieve financial goals with AI-powered tracking.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="indian-youth-section">
+        <div class="youth-container">
+            <div class="youth-content">
+                <h2>Built for Indian Youth</h2>
+                <ul class="check-list">
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> ₹0 to invest - all simulations are virtual</li>
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> Learn at your pace - no time pressure</li>
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> Indian context - focuses on Indian financial system</li>
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> Fun & engaging - gamification keeps you motivated</li>
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> Real feedback - AI coach explains your decisions</li>
+                    <li><i class="fa-solid fa-circle-check check-icon"></i> Build wealth - apply lessons to real money</li>
+                </ul>
+            </div>
+            <div class="youth-visual">
+                <div style="background: #4F46E5; color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-weight: bold;">
+                    Level 5: Money Manager
+                </div>
+                <div style="background: #F1F5F9; height: 20px; border-radius: 10px; margin-bottom: 10px; width: 80%;"></div>
+                <div style="background: #F1F5F9; height: 20px; border-radius: 10px; margin-bottom: 10px; width: 90%;"></div>
+                <div style="background: #F1F5F9; height: 20px; border-radius: 10px; margin-bottom: 20px; width: 70%;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="width: 40px; height: 40px; background: #F59E0B; border-radius: 8px;"></div>
+                    <div style="width: 40px; height: 40px; background: #F59E0B; border-radius: 8px;"></div>
+                    <div style="width: 40px; height: 40px; background: #F59E0B; border-radius: 8px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h3>FinWise</h3>
+                <p>Empowering the next generation of Indian investors through gamified learning.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Platform</h4>
+                <ul>
+                    <li><a href="#">Simulations</a></li>
+                    <li><a href="#">Lessons</a></li>
+                    <li><a href="#">Pricing</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Terms</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2025 FinWise. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

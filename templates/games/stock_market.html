@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=32">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+
+    <header style="background: white; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #E2E8F0; position: sticky; top: 0; z-index: 100;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="/simulations" style="color: var(--text-muted); font-size: 1.2rem;"><i class="fa-solid fa-arrow-left"></i></a>
+            <div style="font-weight: 800; font-size: 1.2rem;">Stock Market Simulator</div>
+        </div>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="background: #F1F5F9; padding: 6px 15px; border-radius: 8px; font-weight: 600; font-size: 0.9rem;">
+                Cash: <span id="headerCash">₹1,00,000</span>
+            </div>
+             <div id="timerBadge" style="background: #EFF6FF; color: #2563EB; padding: 6px 15px; border-radius: 8px; font-weight: 700;">
+                <i class="fa-regular fa-clock"></i> 05:00
+            </div>
+            <button onclick="finishGame()" class="btn-outline" style="padding: 6px 15px; font-size: 0.9rem; color: #DC2626; border-color: #DC2626;">Exit</button>
+        </div>
+    </header>
+
+    <div class="market-layout" style="height: auto; min-height: calc(100vh - 70px);">
+        
+        <div class="stock-list-panel" style="height: 600px;"> <div style="padding: 10px 15px; border-bottom: 1px solid #E2E8F0;">
+                <div class="chip-container">
+                    <span class="asset-chip active" onclick="filterAssets('stock', this)">Stocks</span>
+                    <span class="asset-chip" onclick="filterAssets('mf', this)">MFs</span>
+                    <span class="asset-chip" onclick="filterAssets('etf', this)">ETFs</span>
+                </div>
+            </div>
+            <div class="stock-scroll" id="stockList">
+                </div>
+        </div>
+
+        <div class="trade-panel">
+            
+            <div class="stock-header-card" style="background: white; padding: 25px; border-radius: 16px; border: 1px solid #E2E8F0; margin-bottom: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h1 id="detailSymbol" style="font-size: 2rem; font-weight: 800; margin: 0;">RELIANCE</h1>
+                        <div id="detailName" style="color: var(--text-muted);">Reliance Industries</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <h1 id="detailPrice" style="font-size: 2rem; font-weight: 800; color: #16A34A; margin: 0;">₹2965.13</h1>
+                        <div id="detailChange" style="font-weight: 600; color: #16A34A; margin-top: 5px;">+0.00 (0.00%)</div>
+                    </div>
+                </div>
+                
+                <div style="height: 220px; margin-top: 20px; width: 100%;">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <div class="trade-controls" style="background: white; padding: 25px; border-radius: 16px; border: 1px solid #E2E8F0;">
+                
+                <div class="trade-toggle-row" style="background: #F1F5F9; border-radius: 8px; padding: 4px; display: flex; margin-bottom: 15px;">
+                    <button class="toggle-btn active-buy" id="btnBuy" onclick="setOrderMode('buy')" style="flex:1; border:none; padding:10px; border-radius:6px; font-weight:700; cursor:pointer; background:#16A34A; color:white;">BUY</button>
+                    <button class="toggle-btn" id="btnSell" onclick="setOrderMode('sell')" style="flex:1; border:none; padding:10px; border-radius:6px; font-weight:700; cursor:pointer; background:transparent; color:#64748B;">SELL</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="tradeQty" value="10" min="1" class="trade-input" style="width: 100%; padding: 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Value</label>
+                        <div id="marginReq" style="font-weight: 700; padding: 12px; background: #F8FAFC; border-radius: 8px;">₹29,112</div>
+                    </div>
+                </div>
+
+                <button id="tradeBtn" onclick="executeTrade()" style="width: 100%; padding: 15px; background: #16A34A; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 20px;">Confirm Order</button>
+            </div>
+            
+            <div style="height: 50px;"></div> </div>
+
+        <div class="portfolio-panel" style="height: 600px;"> <h3 style="margin-bottom: 20px;">Your Portfolio</h3>
+            
+            <div style="margin-bottom: 30px;">
+                <div style="font-size: 0.9rem; color: var(--text-muted);">Total Value</div>
+                <div id="portValue" style="font-size: 1.8rem; font-weight: 800;">₹1,00,000</div>
+                <div id="portReturn" style="font-size: 0.9rem; font-weight: 600;">+₹0 (0.00%)</div>
+            </div>
+
+            <div style="font-weight: 700; margin-bottom: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 5px;">Holdings</div>
+            <div id="holdingsList" style="flex: 1; overflow-y: auto;">
+                <div style="color: var(--text-muted); font-style: italic; text-align: center; margin-top: 20px;">No holdings yet.</div>
+            </div>
+
+            <div style="margin-top: auto; background: #F8FAFC; padding: 15px; border-radius: 10px;">
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Trades Used</div>
+                <div style="height: 6px; background: #E2E8F0; border-radius: 3px; margin: 5px 0;">
+                    <div id="tradeProgress" style="height: 100%; width: 0%; background: var(--primary); border-radius: 3px;"></div>
+                </div>
+                <div style="text-align: right; font-size: 0.8rem; font-weight: 600;"><span id="tradeCount">0</span> / 10</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cash = 100000;
+        let allAssets = []; 
+        let currentView = 'stock'; 
+        let currentAsset = null;
+        let portfolio = [];
+        let tradeCount = 0;
+        let orderMode = 'buy';
+        let chartInstance = null;
+        let chartData = [];
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            setInterval(updatePrices, 2000); 
+            startTimer(300);
+        });
+
+        // --- FETCH DATA ---
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/market-data');
+                if(!res.ok) throw new Error("API Error");
+                const data = await res.json();
+                allAssets = data.assets;
+                selectAsset(allAssets[0].symbol);
+            } catch(e) {
+                console.log("Using fallback data");
+            }
+            renderList();
+        }
+
+        // --- TABS LOGIC ---
+        function filterAssets(type, btn) {
+            currentView = type;
+            document.querySelectorAll('.asset-chip').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            renderList();
+        }
+
+        // --- LIST RENDER ---
+        function renderList() {
+            const list = document.getElementById('stockList');
+            list.innerHTML = '';
+            
+            const visible = allAssets.filter(a => a.type === currentView);
+
+            visible.forEach(a => {
+                const isUp = a.change >= 0;
+                const color = isUp ? '#16A34A' : '#DC2626';
+                const item = document.createElement('div');
+                item.className = `stock-item ${a.symbol === currentAsset?.symbol ? 'active' : ''}`;
+                item.onclick = () => selectAsset(a.symbol);
+                
+                item.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; padding: 12px; border-bottom: 1px solid #F1F5F9; cursor: pointer;">
+                        <div>
+                            <div style="font-weight:700;">${a.symbol}</div>
+                            <div style="font-size:0.8rem; color:#64748B;">${a.name.substring(0,15)}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:600;">₹${a.price.toFixed(2)}</div>
+                            <div style="font-size:0.8rem; color:${color};">${a.change_pct.toFixed(2)}%</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function selectAsset(symbol) {
+            currentAsset = allAssets.find(a => a.symbol === symbol);
+            renderList();
+            updateDetailView();
+            resetChart();
+            setOrderMode('buy'); 
+        }
+
+        function updatePrices() {
+            allAssets.forEach(a => {
+                const move = (Math.random() - 0.5) * (a.price * 0.01);
+                a.price += move;
+                a.change = a.price - (a.base_price || a.price * 0.99); 
+                a.change_pct = (a.change / a.price) * 100;
+            });
+            renderList();
+            updateDetailView();
+            updatePortfolioValues();
+        }
+
+        // --- DETAIL VIEW ---
+        function updateDetailView() {
+            if(!currentAsset) return;
+            const isUp = currentAsset.change >= 0;
+            const color = isUp ? '#16A34A' : '#DC2626';
+
+            document.getElementById('detailSymbol').innerText = currentAsset.symbol;
+            document.getElementById('detailName').innerText = currentAsset.name;
+            document.getElementById('detailPrice').innerText = `₹${currentAsset.price.toFixed(2)}`;
+            document.getElementById('detailPrice').style.color = color;
+            document.getElementById('detailChange').innerText = `${currentAsset.change.toFixed(2)} (${currentAsset.change_pct.toFixed(2)}%)`;
+            document.getElementById('detailChange').style.color = color;
+
+            document.getElementById('tradeBtn').innerText = `${orderMode.toUpperCase()} ${currentAsset.symbol}`;
+            updateMargin();
+            updateChartData(currentAsset.price);
+        }
+
+        // --- TRADE LOGIC ---
+        function setOrderMode(mode) {
+            orderMode = mode;
+            const btnBuy = document.getElementById('btnBuy');
+            const btnSell = document.getElementById('btnSell');
+            const actionBtn = document.getElementById('tradeBtn');
+
+            if (mode === 'buy') {
+                btnBuy.style.background = '#16A34A';
+                btnBuy.style.color = 'white';
+                btnSell.style.background = 'transparent';
+                btnSell.style.color = '#64748B';
+                actionBtn.style.background = '#16A34A';
+            } else {
+                btnSell.style.background = '#DC2626';
+                btnSell.style.color = 'white';
+                btnBuy.style.background = 'transparent';
+                btnBuy.style.color = '#64748B';
+                actionBtn.style.background = '#DC2626';
+            }
+            updateDetailView();
+        }
+
+        document.getElementById('tradeQty').addEventListener('input', updateMargin);
+
+        function updateMargin() {
+            const qty = document.getElementById('tradeQty').value;
+            const total = qty * currentAsset.price;
+            document.getElementById('marginReq').innerText = `₹${total.toFixed(0)}`;
+        }
+
+        function executeTrade() {
+            if(tradeCount >= 10) return alert("Max trades reached!");
+            const qty = parseInt(document.getElementById('tradeQty').value);
+            const cost = qty * currentAsset.price;
+
+            if(orderMode === 'buy') {
+                if(cash < cost) return alert("Insufficient Cash");
+                cash -= cost;
+                const existing = portfolio.find(p => p.symbol === currentAsset.symbol);
+                if(existing) { existing.qty += qty; existing.invested += cost; }
+                else { portfolio.push({ symbol: currentAsset.symbol, qty: qty, invested: cost }); }
+            } else {
+                const existing = portfolio.find(p => p.symbol === currentAsset.symbol);
+                if(!existing || existing.qty < qty) return alert("Not enough holdings");
+                cash += cost;
+                existing.qty -= qty;
+                existing.invested -= (existing.invested / (existing.qty + qty)) * qty;
+                if(existing.qty <= 0) portfolio = portfolio.filter(p => p.symbol !== currentAsset.symbol);
+            }
+            
+            tradeCount++;
+            updatePortfolioUI();
+        }
+
+        // --- PORTFOLIO UI ---
+        function updatePortfolioValues() {
+            let currentVal = 0;
+            portfolio.forEach(p => {
+                const live = allAssets.find(m => m.symbol === p.symbol);
+                if(live) currentVal += (p.qty * live.price);
+            });
+            
+            const totalVal = cash + currentVal;
+            document.getElementById('portValue').innerText = `₹${totalVal.toFixed(0)}`;
+            document.getElementById('headerCash').innerText = `₹${cash.toFixed(0)}`;
+
+            const pnl = totalVal - 100000;
+            const pnlPct = (pnl/100000)*100;
+            const pnlEl = document.getElementById('portReturn');
+            pnlEl.innerText = `${pnl>=0?'+':''}₹${pnl.toFixed(0)} (${pnlPct.toFixed(2)}%)`;
+            pnlEl.style.color = pnl >= 0 ? '#16A34A' : '#DC2626';
+        }
+
+        function updatePortfolioUI() {
+            document.getElementById('tradeCount').innerText = `${tradeCount}`;
+            document.getElementById('tradeProgress').style.width = `${tradeCount * 10}%`;
+            
+            const list = document.getElementById('holdingsList');
+            list.innerHTML = '';
+            
+            portfolio.forEach(p => {
+                const live = allAssets.find(m => m.symbol === p.symbol);
+                const curVal = p.qty * live.price;
+                const gain = curVal - p.invested;
+                
+                const div = document.createElement('div');
+                div.style.borderBottom = '1px solid #eee';
+                div.style.padding = '10px 0';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:600;">${p.symbol}</span>
+                        <button onclick="quickSell('${p.symbol}')" style="font-size:0.7rem; padding:2px 8px; border:1px solid #DC2626; color:#DC2626; background:white; border-radius:4px; cursor:pointer;">SELL</button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:4px;">
+                        <span style="color:#64748B">${p.qty} Qty</span>
+                        <span style="color:${gain>=0?'#16A34A':'#DC2626'}">${gain>=0?'+':''}₹${gain.toFixed(0)}</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            updatePortfolioValues();
+        }
+        
+        function quickSell(symbol) {
+            selectAsset(symbol);
+            setOrderMode('sell');
+        }
+
+        // --- CHART ---
+        function resetChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartData = [];
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ data: [], borderColor: '#2563EB', borderWidth: 2, fill: false, pointRadius: 0, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } }, animation: false }
+            });
+        }
+
+        function updateChartData(price) {
+            if(!chartInstance) return;
+            const now = new Date().toLocaleTimeString();
+            if(chartData.length > 30) { chartData.shift(); chartInstance.data.labels.shift(); }
+            chartData.push(price);
+            chartInstance.data.labels.push(now);
+            chartInstance.data.datasets[0].data = chartData;
+            
+            if(chartData.length > 1) {
+                const last = chartData[chartData.length-1];
+                const start = chartData[0];
+                chartInstance.data.datasets[0].borderColor = last >= start ? '#16A34A' : '#DC2626';
+            }
+            chartInstance.update();
+        }
+
+        function startTimer(duration) {
+            let timer = duration, minutes, seconds;
+            setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+                document.querySelector('#timerBadge').innerText = `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+                if (--timer < 0) finishGame();
+            }, 1000);
+        }
+        
+        async function finishGame() {
+            // Calculate performance
+            const totalVal = parseFloat(document.getElementById('portValue').innerText.replace(/[^0-9.-]+/g,""));
+            const pnl = totalVal - 100000;
+            const xpEarned = pnl > 0 ? 200 : 50;
+
+            // Call Backend API to add XP
+            try {
+                await fetch('/api/earn-xp', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ amount: xpEarned })
+                });
+            } catch(e) { console.log("Offline mode: XP not saved"); }
+
+            alert(`Simulation Complete!\nFinal P&L: ₹${pnl}\nXP Earned: +${xpEarned}`);
+            location.href = '/simulations';
+        }
+    </script>
+</body>
+</html>

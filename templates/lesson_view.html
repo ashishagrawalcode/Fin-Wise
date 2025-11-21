@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ lesson.title }} | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=35">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header style="background: white; height: 70px; display: flex; align-items: center; padding: 0 5%; border-bottom: 1px solid #E2E8F0; position:sticky; top:0; z-index:100;">
+        <a href="/lessons" style="color: var(--text-muted); font-size: 1.2rem; margin-right: 20px;"><i class="fa-solid fa-arrow-left"></i></a>
+        <h3 style="margin: 0;">{{ lesson.title }}</h3>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
+             <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp if user else 0 }} XP</div>
+        </div>
+    </header>
+
+    <div class="lesson-container">
+        
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/{{ lesson.video_id }}" frameborder="0" allowfullscreen></iframe>
+        </div>
+
+        <div class="lesson-article">
+            <h1>{{ lesson.title }}</h1>
+            <div style="display: flex; gap: 10px; margin-bottom: 30px;">
+                <span class="tag beginner">Beginner</span>
+                <span class="tag time">3 min read</span>
+            </div>
+            
+            {{ lesson.content|safe }}
+        </div>
+
+        <div class="quiz-section">
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-clipboard-question"></i> Knowledge Check
+            </h2>
+
+            <div id="quizContainer">
+                {% for q in lesson.quiz %}
+                {% set q_index = loop.index0 %}
+                
+                <div class="quiz-question" id="q-{{ q_index }}" data-correct="{{ q.correct }}">
+                    <div class="q-title">{{ loop.index }}. {{ q.q }}</div>
+                    <div class="q-options">
+                        {% for opt in q.options %}
+                        <div class="q-opt" onclick="selectOption({{ q_index }}, {{ loop.index0 }}, this)">
+                            {{ opt }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button class="quiz-btn" onclick="submitQuiz()">Submit Answers</button>
+        </div>
+        
+        <div style="height: 100px;"></div>
+    </div>
+
+    <script>
+        let userAnswers = {};
+        const totalQuestions = {{ lesson.quiz|length }};
+
+        function selectOption(qIndex, optIndex, element) {
+            // Store answer
+            userAnswers[qIndex] = optIndex;
+            
+            // Visual Selection
+            const parent = document.getElementById(`q-${qIndex}`);
+            const opts = parent.querySelectorAll('.q-opt');
+            opts.forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        async function submitQuiz() {
+            if(Object.keys(userAnswers).length < totalQuestions) {
+                alert("Please answer all questions.");
+                return;
+            }
+
+            let score = 0;
+            let allCorrect = true;
+
+            // Check Answers
+            for(let i=0; i<totalQuestions; i++) {
+                const qDiv = document.getElementById(`q-${i}`);
+                const correctIndex = parseInt(qDiv.dataset.correct);
+                const userIndex = userAnswers[i];
+                const opts = qDiv.querySelectorAll('.q-opt');
+
+                // Highlight Correct/Wrong
+                opts[correctIndex].classList.add('correct');
+                if(userIndex !== correctIndex) {
+                    opts[userIndex].classList.add('wrong');
+                    allCorrect = false;
+                } else {
+                    score++;
+                }
+            }
+
+            if(allCorrect) {
+                // Success! Confetti + API
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                
+                // Add XP
+                try {
+                    await fetch('/api/earn-xp', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ amount: 50 })
+                    });
+                } catch(e) {}
+
+                alert(`Perfect Score! You earned +50 XP.`);
+                setTimeout(() => location.href = '/lessons', 1000);
+
+            } else {
+                alert(`You got ${score}/${totalQuestions}. Review your answers and try again.`);
+            }
+        }
+    </script>
+
+</body>
+</html>

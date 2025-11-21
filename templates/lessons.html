@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessons | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=32">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons" style="color: var(--primary);">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+            <a href="/logout" style="color:#ef4444; margin-left:10px;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div style="margin-bottom: 40px;">
+            <h1 style="font-size: 2.5rem; font-weight: 800; font-family: 'Plus Jakarta Sans';">Micro-Learning Hub 📚</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">Master financial concepts in 3-4 minute bite-sized videos. Take quizzes to earn XP.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <h4>Lessons Completed</h4>
+                <h2>2 / 20</h2>
+                <div class="progress-bar"><div class="fill" style="width: 10%;"></div></div>
+            </div>
+            <div class="stat-box">
+                <h4>XP Earned</h4>
+                <h2>100 / 1000</h2>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">900 XP remaining</div>
+            </div>
+            <div class="stat-box">
+                <h4>Time Invested</h4>
+                <h2>12 min</h2>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">67 min total available</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px;">Topics</h3>
+        <div class="topics-grid">
+            <div class="topic-card">
+                <div class="topic-icon">💰</div>
+                <strong>Budgeting</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">2/5 lessons completed</div>
+            </div>
+            <div class="topic-card">
+                <div class="topic-icon">📈</div>
+                <strong>Investing</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">0/5 lessons completed</div>
+            </div>
+            <div class="topic-card">
+                <div class="topic-icon">💳</div>
+                <strong>Credit & Debt</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">0/5 lessons completed</div>
+            </div>
+            <div class="topic-card">
+                <div class="topic-icon">🎯</div>
+                <strong>Taxes & Planning</strong>
+                <div style="font-size:0.8rem; color:var(--text-muted);">0/5 lessons completed</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 50px;">
+            <h3 style="margin-bottom: 20px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-brands fa-youtube" style="color: #FF0000;"></i> FinShorts
+                <span style="font-size:0.8rem; background:#000; color:white; padding:2px 8px; border-radius:10px;">New</span>
+            </h3>
+            <div class="shorts-container">
+                <div class="short-card" style="background: linear-gradient(to bottom, transparent, black), url('https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=400&q=80'); background-size: cover;">
+                    <i class="fa-solid fa-play play-icon"></i>
+                    <div class="short-overlay">
+                        <strong>Stop Buying Coffee? ☕</strong>
+                        <div style="font-size:0.8rem;">The Latte Factor Myth</div>
+                    </div>
+                </div>
+                <div class="short-card" style="background: linear-gradient(to bottom, transparent, black), url('https://images.unsplash.com/photo-1611974765270-ca1258634369?auto=format&fit=crop&w=400&q=80'); background-size: cover;">
+                    <i class="fa-solid fa-play play-icon"></i>
+                    <div class="short-overlay">
+                        <strong>What is an ETF? 📉</strong>
+                        <div style="font-size:0.8rem;">Investing in 60 seconds</div>
+                    </div>
+                </div>
+                <div class="short-card" style="background: linear-gradient(to bottom, transparent, black), url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=400&q=80'); background-size: cover;">
+                    <i class="fa-solid fa-play play-icon"></i>
+                    <div class="short-overlay">
+                        <strong>Credit Score Hacks 💳</strong>
+                        <div style="font-size:0.8rem;">Boost your score fast</div>
+                    </div>
+                </div>
+                <div class="short-card" style="background: linear-gradient(to bottom, transparent, black), url('https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf?auto=format&fit=crop&w=400&q=80'); background-size: cover;">
+                    <i class="fa-solid fa-play play-icon"></i>
+                    <div class="short-overlay">
+                        <strong>Crypto vs Stocks ⚔️</strong>
+                        <div style="font-size:0.8rem;">Risk comparison</div>
+                    </div>
+                </div>
+                 <div class="short-card" style="background: linear-gradient(to bottom, transparent, black), url('https://images.unsplash.com/photo-1565514020176-dbf2277f0357?auto=format&fit=crop&w=400&q=80'); background-size: cover;">
+                    <i class="fa-solid fa-play play-icon"></i>
+                    <div class="short-overlay">
+                        <strong>Emergency Funds 🚨</strong>
+                        <div style="font-size:0.8rem;">How much do you need?</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" class="search-bar" placeholder="Search lessons (e.g., 'Mutual Funds', 'Taxes')...">
+        </div>
+
+        <h3 style="margin-bottom: 20px;">All Lessons</h3>
+        <div class="lesson-grid">
+            
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">📋</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Budgeting 101: Why It Matters</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Learn the fundamentals of budgeting. A budget is a plan for your money.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <a href="/lesson/budgeting-101" class="btn-lesson btn-start" style="text-decoration:none; display:flex; justify-content:center; align-items:center;">
+                    <i class="fa-solid fa-play"></i> Start
+                </a>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">📊</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">The 50/30/20 Rule</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Deep dive into the classic budgeting rule. 50% Needs, 30% Wants, 20% Savings.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <button class="btn-lesson btn-start"><i class="fa-solid fa-play"></i> Start</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">📱</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Tracking Expenses Like a Pro</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Learn the best ways to track expenses using apps, spreadsheets, and envelope techniques.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Budgeting 101</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🚨</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Emergency Fund Essentials</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Why emergency funds are critical and how to build yours. Aim for 3-6 months of expenses.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <button class="btn-lesson btn-start"><i class="fa-solid fa-play"></i> Start</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">📈</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Stock Market Basics</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Understand how the stock market works, what stocks are, and the risks/rewards of equity investing.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">4 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <a href="/lesson/investing-basics" class="btn-lesson btn-start" style="text-decoration:none; display:flex; justify-content:center; align-items:center;">
+                    <i class="fa-solid fa-play"></i> Start
+                </a>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🏛️</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Mutual Funds for Beginners</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Introduction to mutual funds, SIPs vs Lumpsum, and how to pick the right fund for your goals.</p>
+                    <div class="lesson-tags">
+                        <span class="tag intermediate">Intermediate</span>
+                        <span class="tag time">5 min</span>
+                        <span class="tag xp">+100 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Stock Market Basics</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">📊</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Credit Scores Explained</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Understand CIBIL scores, what affects them, and why they matter for future loans.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <button class="btn-lesson btn-start"><i class="fa-solid fa-play"></i> Start</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🏡</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Loans: Good Debt vs Bad Debt</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Understand different types of loans. When to use debt productively vs destructively.</p>
+                    <div class="lesson-tags">
+                        <span class="tag intermediate">Intermediate</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+100 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Credit Scores Explained</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">💳</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Credit Cards: Powerful but Dangerous</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">How to use credit cards wisely to build score and earn rewards without falling into the debt trap.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">4 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Credit Scores Explained</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🇮🇳</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Indian Tax System Basics</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Understand the Indian income tax slabs, New vs Old Regime, and how it affects your earnings.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">4 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <button class="btn-lesson btn-start"><i class="fa-solid fa-play"></i> Start</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">💰</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Section 80C Deductions Explained</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Maximize your tax savings using Section 80C deductions like EPF, PPF, ELSS, and LIC.</p>
+                    <div class="lesson-tags">
+                        <span class="tag intermediate">Intermediate</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+100 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Indian Tax System Basics</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🛡️</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Insurance: Financial Safety Net</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Why insurance matters. Term Life vs Endowment, and why Health Insurance is non-negotiable.</p>
+                    <div class="lesson-tags">
+                        <span class="tag beginner">Beginner</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+50 XP</span>
+                    </div>
+                </div>
+                <button class="btn-lesson btn-start"><i class="fa-solid fa-play"></i> Start</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🏖️</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Retirement Planning Essentials</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Plan for a comfortable retirement starting today. The magic of compounding over long periods.</p>
+                    <div class="lesson-tags">
+                        <span class="tag advanced">Advanced</span>
+                        <span class="tag time">4 min</span>
+                        <span class="tag xp">+200 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Mutual Funds, 80C Deductions</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+
+            <div class="lesson-card">
+                <div class="lesson-content">
+                    <div class="lesson-icon">🍕</div>
+                    <h3 style="font-size:1.2rem; margin-bottom:10px;">Diversification: Don't Put Eggs in One Basket</h3>
+                    <p style="font-size:0.95rem; color:var(--text-muted); line-height:1.5;">Why diversification matters and how to build a portfolio across asset classes.</p>
+                    <div class="lesson-tags">
+                        <span class="tag intermediate">Intermediate</span>
+                        <span class="tag time">3 min</span>
+                        <span class="tag xp">+100 XP</span>
+                    </div>
+                    <div class="req-text"><i class="fa-solid fa-lock"></i> Requires: Stock Market Basics</div>
+                </div>
+                <button class="btn-lesson btn-locked">Locked</button>
+            </div>
+            
+        </div>
+
+        <div class="tips-container">
+            <h3 style="color:#1E3A8A; margin-bottom:15px;"><i class="fa-regular fa-lightbulb"></i> Learning Tips</h3>
+            <ul>
+                <li>Watch lessons in sequence for better understanding of concepts</li>
+                <li>Take the quiz after each lesson - it reinforces the learning</li>
+                <li>Apply lessons immediately - try the simulations after relevant topics</li>
+                <li>Revisit lessons whenever you face real financial decisions</li>
+            </ul>
+        </div>
+        
+        <div style="height: 50px;"></div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

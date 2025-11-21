@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=45">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile" style="color: var(--primary);">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+        <div class="nav-actions">
+            <a href="/logout" style="color:#ef4444;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div class="profile-header-card">
+            <form action="/profile" method="POST" enctype="multipart/form-data" id="avatarForm">
+                <div class="profile-avatar-upload">
+                    <img src="{{ url_for('static', filename='uploads/' + user['profile_pic']) if user['profile_pic'] else 'https://ui-avatars.com/api/?name=' + user['username'] }}" class="profile-img-lg">
+                    <label for="fileInput" class="upload-icon-overlay">
+                        <i class="fa-solid fa-camera"></i>
+                    </label>
+                    <input type="file" name="profile_pic" id="fileInput" style="display:none;" onchange="document.getElementById('avatarForm').submit()">
+                </div>
+            </form>
+            
+            <div style="flex: 1;">
+                <h1 style="font-size: 1.8rem; margin-bottom: 5px;">{{ user.username }}</h1>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">{{ user.email }}</div>
+                
+                <div style="margin-top: 15px; display: flex; align-items: center; gap: 20px;">
+                    <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+                    <div style="font-weight: 600; color: var(--text-muted);">Level {{ user.level }} Investor</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            
+            <div class="settings-card">
+                <h3 style="margin-bottom: 20px;">Personal Details</h3>
+                <form method="POST" action="/profile">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" value="{{ user.username }}" required style="width:100%; padding:12px; border:1px solid #CBD5E1; border-radius:8px;">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" name="phone" value="{{ user.phone or '' }}" placeholder="+91 98765 43210" style="width:100%; padding:12px; border:1px solid #CBD5E1; border-radius:8px;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Address</label>
+                        <input type="text" name="address" value="{{ user.address or '' }}" placeholder="123, Fin Street, Mumbai" style="width:100%; padding:12px; border:1px solid #CBD5E1; border-radius:8px;">
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="margin-top: 20px;">Save Changes</button>
+                </form>
+            </div>
+
+            <div>
+                <div class="settings-card">
+                    <h3 style="margin-bottom: 20px;">Preferences</h3>
+                    <div class="settings-row">
+                        <span>Email Notifications</span>
+                        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <span>Public Profile</span>
+                        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                    </div>
+                    <div class="settings-row">
+                        <span>Dark Mode</span>
+                        <label class="switch"><input type="checkbox" id="darkModeToggle"><span class="slider"></span></label>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3 style="margin-bottom: 20px;">Security</h3>
+                    <form method="POST" action="/profile">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" name="current_password" required style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px;">
+                        </div>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label>New Password</label>
+                            <input type="password" name="new_password" required style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px;">
+                        </div>
+                        <button type="submit" class="btn-outline" style="width:100%; margin-top: 15px;">Change Password</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

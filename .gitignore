@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+instance/
+.webassets-cache
+.DS_Store
+venv/
+finwise.db

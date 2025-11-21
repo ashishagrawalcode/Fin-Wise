@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Welcome Back</h2>
+            <p>Enter your details to access your account.</p>
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div style="background: #FECACA; color: #991B1B; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+                        {{ messages[0] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" required placeholder="john@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password" required placeholder="••••••••">
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword(this)"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Sign In</button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="/signup">Create one</a>
+                <br><br>
+                <a href="/" style="color: var(--text-muted); font-weight: 400;">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark Mode Logic (Keep this so dark mode still works)
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Check saved theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Toggle Password Logic (The part you need)
+        function togglePassword(icon) {
+            // Find the input field right before the icon
+            const input = icon.previousElementSibling;
+            
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+    </script>
+</body>
+</html>

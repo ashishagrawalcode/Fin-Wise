@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=40">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard" style="color: var(--primary);">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+            <a href="/logout" style="margin-left:10px; color:#ef4444;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="leaderboard-container">
+        
+        <div class="leaderboard-header">
+            <h1 style="font-size: 2.5rem; font-weight: 800; font-family: 'Plus Jakarta Sans'; margin-bottom: 10px;">Global Rankings 🏆</h1>
+            <p style="color: var(--text-muted);">Compete with the community. Earn XP by finishing lessons and winning simulations.</p>
+        </div>
+
+        <div class="rank-list">
+            
+            {% for user in leaderboard %}
+            <div class="rank-card rank-{{ loop.index }} {% if user.username == current_user %}is-me{% endif %}">
+                
+                <div class="rank-num">
+                    {% if loop.index == 1 %}<i class="fa-solid fa-trophy"></i>
+                    {% elif loop.index == 2 %}2
+                    {% elif loop.index == 3 %}3
+                    {% else %}{{ loop.index }}{% endif %}
+                </div>
+
+                <div class="user-info">
+                    <div class="user-name">{{ user.username }}</div>
+                    <div class="user-badge">
+                        {% if loop.index == 1 %}Grandmaster Investor
+                        {% elif loop.index <= 3 %}Market Pro
+                        {% else %}Financial Explorer{% endif %}
+                    </div>
+                </div>
+
+                <div class="xp-score">
+                    {{ user.xp }} XP
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+        <div style="text-align: center; margin-top: 50px; color: var(--text-muted); font-size: 0.9rem;">
+            <p>Keep learning to climb the ranks! 🚀</p>
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

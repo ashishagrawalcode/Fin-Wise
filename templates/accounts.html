@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Hub | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts" style="color: var(--primary);">Accounts</a></li>
+                <li><a href="/simulations">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+            <a href="/logout" style="margin-left:10px; color:#ef4444;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div style="margin-bottom: 30px;">
+            <h1 style="font-size: 2rem; font-weight: 800; font-family: 'Plus Jakarta Sans';">Financial Hub</h1>
+            <p style="color: var(--text-muted);">Manage your wealth across all accounts</p>
+        </div>
+
+        <div class="hub-header-grid">
+            <div class="net-worth-card">
+                <div>
+                    <div style="opacity: 0.9; margin-bottom: 5px;">Total Net Worth</div>
+                    <div style="font-size: 3rem; font-weight: 800; font-family: 'Plus Jakarta Sans';">{{ net_worth }}</div>
+                </div>
+                <div style="font-size: 0.9rem; display: flex; gap: 15px; opacity: 0.9;">
+                    <span><i class="fa-solid fa-arrow-trend-up"></i> +2.5% from last month</span>
+                </div>
+            </div>
+
+            <div class="stat-card-white">
+                <h4 style="margin-bottom: 20px; color: var(--text-muted);">Monthly Cash Flow</h4>
+                <div class="stat-row">
+                    <span><i class="fa-solid fa-circle" style="color:#16A34A; font-size:0.6rem;"></i> Income</span>
+                    <span style="color:#16A34A; font-weight:700;">+{{ income }}</span>
+                </div>
+                <div class="stat-row">
+                    <span><i class="fa-solid fa-circle" style="color:#DC2626; font-size:0.6rem;"></i> Expenses</span>
+                    <span style="color:#DC2626; font-weight:700;">-{{ expense }}</span>
+                </div>
+                <hr style="border:0; border-top:1px solid #F1F5F9; margin: 10px 0;">
+                <div class="stat-row">
+                    <span>Savings</span>
+                    <span style="font-weight:800;">{{ savings }}</span>
+                </div>
+            </div>
+
+            <div class="stat-card-white">
+                <h4 style="margin-bottom: 20px; color: var(--text-muted);">Quick Stats</h4>
+                <div style="display:flex; gap:15px;">
+                    <div style="background:#EFF6FF; padding:15px; border-radius:12px; flex:1;">
+                        <i class="fa-solid fa-wallet" style="color: var(--primary); margin-bottom:5px;"></i>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">Active Accounts</div>
+                        <div style="font-weight:700;">{{ accounts|length }}</div>
+                    </div>
+                    <div style="background:#FFF7ED; padding:15px; border-radius:12px; flex:1;">
+                        <i class="fa-solid fa-piggy-bank" style="color: #EA580C; margin-bottom:5px;"></i>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">Liabilities</div>
+                        <div style="font-weight:700; color:#DC2626;">{{ liabilities }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px;">Quick Actions</h3>
+        <div class="action-bar">
+            <div class="action-tile" onclick="openModal('transactionModal', 'income')">
+                <i class="fa-solid fa-arrow-trend-up" style="color: #16A34A; font-size: 1.5rem;"></i>
+                Add Income
+            </div>
+            <div class="action-tile" onclick="openModal('transactionModal', 'expense')">
+                <i class="fa-solid fa-arrow-trend-down" style="color: #DC2626; font-size: 1.5rem;"></i>
+                Add Expense
+            </div>
+            <div class="action-tile" onclick="openModal('accountModal')">
+                <i class="fa-solid fa-plus" style="color: var(--primary); font-size: 1.5rem;"></i>
+                Link Account
+            </div>
+            <div class="action-tile" onclick="downloadCSV()">
+                <i class="fa-solid fa-download" style="color: var(--text-main); font-size: 1.5rem;"></i>
+                Export Data
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px;">Your Accounts</h3>
+        
+        {% if not accounts %}
+            <div style="text-align:center; padding: 50px; background:white; border-radius:16px; border:1px solid #e2e8f0;">
+                <i class="fa-solid fa-wallet" style="font-size:3rem; color:#cbd5e1; margin-bottom:20px;"></i>
+                <p>No accounts linked. Start by adding your first bank account.</p>
+                <button onclick="openModal('accountModal')" class="btn-primary" style="margin-top:15px;">+ Link Account</button>
+            </div>
+        {% endif %}
+
+        <div class="acc-list-container">
+            {% for acc in accounts %}
+            <div class="acc-row-card" onclick="toggleAccount(this)">
+                <div class="acc-row-header">
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <div style="width:50px; height:50px; background:#F1F5F9; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--text-main);">
+                            {{ acc.institution[:2] }}
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:1.1rem;">{{ acc.account_name }}</div>
+                            <div style="font-size:0.9rem; color:var(--text-muted);">{{ acc.institution }} • {{ acc.type|upper }}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <div style="text-align:right;">
+                            <div style="font-weight:800; font-size:1.2rem; color: {{ '#DC2626' if acc.type in ['loan', 'credit'] else '#16A34A' }}">
+                                {{ '-' if acc.type in ['loan', 'credit'] else '' }}₹{{ acc.balance }}
+                            </div>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">Current Balance</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-down arrow-icon" style="color:var(--text-muted);"></i>
+                    </div>
+                </div>
+
+                <div class="acc-details" onclick="event.stopPropagation()"> <div class="details-grid">
+                        
+                        <div class="detail-box">
+                            <h4>Outstanding Bills</h4>
+                            {% if acc.type in ['loan', 'credit'] %}
+                                <div class="bill-item">
+                                    <div>
+                                        <strong>Due Payment</strong><br>
+                                        <span style="font-size:0.8rem; color:#DC2626;">Due in 5 days</span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <div>₹{{ (acc.balance * 0.05)|round|int }}</div> <button class="pay-btn">Pay Now</button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p style="font-size:0.9rem; color:var(--text-muted);">No bills due for this savings account.</p>
+                            {% endif %}
+                            
+                            <h4 style="margin-top:20px;">Actions</h4>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-outline" style="font-size:0.8rem;">View Statement</button>
+                                <button class="btn-outline" style="font-size:0.8rem;">Edit Details</button>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="delete_account_id" value="{{ acc.id }}">
+                                    <button type="submit" class="btn-outline" style="font-size:0.8rem; color:#DC2626; border-color:#DC2626;" onclick="return confirm('Delete account?')">Unlink</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="detail-box">
+                            <h4>Recent History</h4>
+                            <div style="background:white; border:1px solid #E2E8F0; border-radius:8px; padding:10px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem;">
+                                    <span>Opening Balance</span>
+                                    <span style="font-weight:600;">₹{{ acc.balance }}</span>
+                                </div>
+                                <div style="text-align:center; color:var(--text-muted); font-size:0.8rem; padding:10px;">
+                                    No recent transactions linked.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="height: 100px;"></div>
+    </div>
+
+    <div id="accountModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:white; padding:30px; border-radius:20px; width:90%; max-width:500px;">
+            <span onclick="closeModal('accountModal')" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2>Link Account</h2>
+            <form method="POST" style="margin-top:20px;">
+                <div class="form-group"><label>Institution</label><input type="text" name="institution" placeholder="e.g. HDFC" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <div class="form-group"><label>Account Name</label><input type="text" name="account_name" placeholder="e.g. Salary Acc" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <div class="form-group"><label>Type</label>
+                    <select name="type" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                        <option value="bank">Bank Account</option><option value="credit">Credit Card</option><option value="loan">Loan</option><option value="pf">Investment/PF</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Balance</label><input type="number" name="balance" placeholder="0.00" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <button type="submit" class="btn-primary" style="width:100%;">Add Account</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="transactionModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:white; padding:30px; border-radius:20px; width:90%; max-width:500px;">
+            <span onclick="closeModal('transactionModal')" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 id="transTitle">Add Transaction</h2>
+            <form method="POST" style="margin-top:20px;">
+                <input type="hidden" name="trans_type" id="transTypeInput">
+                <div class="form-group"><label>Category</label><input type="text" name="category" placeholder="e.g. Freelance, Stocks, Food" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <div class="form-group"><label>Amount</label><input type="number" name="amount" placeholder="0.00" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <div class="form-group"><label>Date</label><input type="date" name="date" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></div>
+                <button type="submit" class="btn-primary" style="width:100%;">Save Record</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Accordion Toggle
+        function toggleAccount(card) {
+            card.classList.toggle('active');
+        }
+
+        // Modal Logic
+        function openModal(id, type) {
+            document.getElementById(id).style.display = 'flex';
+            if(id === 'transactionModal') {
+                document.getElementById('transTitle').innerText = type === 'income' ? 'Add Income 💰' : 'Add Expense 💸';
+                document.getElementById('transTypeInput').value = type;
+            }
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // Export CSV Logic
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Institution,Account Name,Type,Balance\n";
+            
+            // Grab data from the visible cards
+            {% for acc in accounts %}
+                csvContent += "{{ acc.institution }},{{ acc.account_name }},{{ acc.type }},{{ acc.balance }}\n";
+            {% endfor %}
+
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "finwise_summary.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

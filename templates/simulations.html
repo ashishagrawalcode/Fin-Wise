@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulations Lab | FinWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
+            FinWise
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/simulations" style="color: var(--primary);">Simulations</a></li>
+                <li><a href="/lessons">Lessons</a></li>
+                <li><a href="/goals">Goals</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/profile">Profile</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <a href="/coach" class="btn-outline" style="text-decoration:none; display:inline-block;"><i class="fa-regular fa-comment-dots"></i> Coach</a>
+            <div class="xp-pill"><i class="fa-solid fa-bolt"></i> {{ user.xp }} XP</div>
+            <a href="/logout" style="margin-left:10px; color:#ef4444;"><i class="fa-solid fa-power-off"></i></a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div style="margin-bottom: 40px;">
+            <h1 style="font-size: 2.5rem; font-weight: 800; font-family: 'Plus Jakarta Sans'; margin-bottom: 15px;">
+                Simulations Lab <span style="font-size: 2rem;">🎮</span>
+            </h1>
+            <p style="color: var(--text-muted); max-width: 700px; font-size: 1.1rem;">
+                Learn financial concepts through interactive simulations. Make real-time decisions and see the consequences unfold. Each simulation teaches you valuable lessons about money management.
+            </p>
+        </div>
+
+        <div class="sim-features-row">
+            <div class="sim-feature-box">
+                <h4 style="color: #EAB308;"><i class="fa-solid fa-bolt"></i> XP System</h4>
+                <p>Earn 150 XP per simulation. Complete all to unlock special challenges.</p>
+            </div>
+            <div class="sim-feature-box">
+                <h4 style="color: #3B82F6;"><i class="fa-solid fa-lock-open"></i> Level Unlocks</h4>
+                <p>New simulations unlock as you level up. Reach Level 5 to unlock the Crypto Sandbox!</p>
+            </div>
+            <div class="sim-feature-box">
+                <h4 style="color: #1E293B;"><i class="fa-solid fa-brain"></i> AI Feedback</h4>
+                <p>Get personalized AI feedback on your decisions and what you could improve.</p>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 25px; font-family: 'Plus Jakarta Sans';">Available Simulations</h2>
+
+        <div class="sim-card-grid">
+            
+            <div class="sim-lab-card theme-blue">
+                <i class="fa-solid fa-arrow-trend-up" style="position:absolute; top:20px; right:20px; font-size:1.5rem; opacity:0.5;"></i>
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Stock Market Simulator</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">5 min</span>
+                        <span class="sim-tag">Medium</span>
+                        <span class="sim-tag">+150 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.9; font-size: 0.95rem;">
+                        Trade 15 real Indian stocks with ₹1L capital. Learn about market timing, risk management, and trends.
+                    </p>
+                </div>
+                <a href="/simulations/stock-market" class="sim-btn btn-start">
+                    <i class="fa-solid fa-play"></i> Start Simulation
+                </a>
+            </div>
+
+            <div class="sim-lab-card theme-red">
+                <i class="fa-solid fa-triangle-exclamation" style="position:absolute; top:20px; right:20px; font-size:1.5rem; opacity:0.5;"></i>
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Job Loss Crisis</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">8 min</span>
+                        <span class="sim-tag">Hard</span>
+                        <span class="sim-tag">+150 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.9; font-size: 0.95rem;">
+                        Suddenly lose your job. Manage your emergency fund, prioritize bills, and make smart decisions to survive 6 months.
+                    </p>
+                </div>
+                <a href="/simulations/job-loss" class="sim-btn btn-start">
+                    <i class="fa-solid fa-play"></i> Start Simulation
+                </a>
+            </div>
+
+            <div class="sim-lab-card theme-pink">
+                <i class="fa-solid fa-notes-medical" style="position:absolute; top:20px; right:20px; font-size:1.5rem; opacity:0.5;"></i>
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Medical Emergency</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">6 min</span>
+                        <span class="sim-tag">Medium</span>
+                        <span class="sim-tag">+150 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.9; font-size: 0.95rem;">
+                        Handle unexpected medical expenses while maintaining other financial obligations. Learn about insurance.
+                    </p>
+                </div>
+                <button class="sim-btn btn-locked"><i class="fa-solid fa-lock"></i> Unlock at Level 2</button>
+            </div>
+
+            <div class="sim-lab-card theme-ghost">
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Wedding Planning</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">7 min</span>
+                        <span class="sim-tag">Medium</span>
+                        <span class="sim-tag">+150 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.8; font-size: 0.95rem; color: var(--text-muted);">
+                        Budget for a wedding while managing other financial goals. Learn about major expense planning.
+                    </p>
+                </div>
+                <button class="sim-btn btn-locked"><i class="fa-solid fa-lock"></i> Unlock at Level 2</button>
+            </div>
+
+            <div class="sim-lab-card theme-yellow">
+                <i class="fa-solid fa-bolt" style="position:absolute; top:20px; right:20px; font-size:1.5rem; opacity:0.5;"></i>
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Crypto Sandbox</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">5 min</span>
+                        <span class="sim-tag">Hard</span>
+                        <span class="sim-tag">+200 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.9; font-size: 0.95rem;">
+                        Trade Bitcoin, Ethereum, and Dogecoin with extreme volatility. Understand FOMO, panic selling, and risk.
+                    </p>
+                </div>
+                <button class="sim-btn btn-locked"><i class="fa-solid fa-lock"></i> Unlock at Level 5</button>
+            </div>
+
+            <div class="sim-lab-card theme-orange">
+                <i class="fa-solid fa-credit-card" style="position:absolute; top:20px; right:20px; font-size:1.5rem; opacity:0.5;"></i>
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 800;">Debt Payoff Challenge</h3>
+                    <div class="tag-row">
+                        <span class="sim-tag">8 min</span>
+                        <span class="sim-tag">Hard</span>
+                        <span class="sim-tag">+150 XP</span>
+                    </div>
+                    <p style="margin-top: 15px; opacity: 0.9; font-size: 0.95rem;">
+                        Manage multiple debts (credit card, personal loan, home loan). Learn about debt snowball vs avalanche strategies.
+                    </p>
+                </div>
+                <button class="sim-btn btn-locked"><i class="fa-solid fa-lock"></i> Unlock at Level 3</button>
+            </div>
+
+        </div>
+
+        <div class="tips-box">
+            <h4><i class="fa-regular fa-star"></i> Tips for Success</h4>
+            <ul>
+                <li>Think before you act - hasty decisions often lead to losses</li>
+                <li>Watch for patterns in market behavior across multiple playthroughs</li>
+                <li>Remember: Real money decisions involve the same psychology as simulations</li>
+                <li>Check the AI feedback after each simulation - it contains valuable insights</li>
+            </ul>
+        </div>
+
+        <div style="height: 100px;"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
