@@ -1,371 +1,309 @@
+import os
+import random
+from datetime import timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import timedelta
-import random
-import os
 
+# --- 1. CONFIGURATION ---
 app = Flask(__name__)
 app.secret_key = 'rupeeverse_secret_key'
-
-# --- CONFIGURATION ---
 app.permanent_session_lifetime = timedelta(days=30)
 
-# FIX FOR VERCEL READ-ONLY FILE SYSTEM
+# Uploads
 if os.environ.get('VERCEL'):
-    UPLOAD_FOLDER = '/tmp'  # Writable directory in cloud
+    UPLOAD_FOLDER = '/tmp'
 else:
-    UPLOAD_FOLDER = os.path.join('static', 'uploads') # Local directory
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# Only create if not on Vercel root (prevents crash)
-try:
+    UPLOAD_FOLDER = os.path.join('static', 'uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-except:
-    pass
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- DATABASE CONNECTION (SUPABASE) ---
-DB_CONFIG = {
-    'dbname': 'postgres',
-    'user': 'postgres',
-    'password': '123Ashish#bmu1',
-    'host': 'db.rklzvrojyxnrzgwqkcej.supabase.co',
-    'port': '5432',
-    'sslmode': 'require'
-}
+# Database Selector (Auto-Detect)
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-def get_db_connection():
-    conn = psycopg2.connect(**DB_CONFIG)
-    return conn
+if DATABASE_URL:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    def get_db():
+        return psycopg2.connect(DATABASE_URL)
+    db_type = 'postgres'
+else:
+    import sqlite3
+    def get_db():
+        conn = sqlite3.connect('finwise.db')
+        conn.row_factory = sqlite3.Row
+        return conn
+    db_type = 'sqlite'
 
-# --- SPECIAL SETUP ROUTE (RUN THIS ONCE) ---
-@app.route('/setup')
-def setup_db():
-    try:
-        conn = get_db_connection()
+# --- 2. UNIVERSAL DB QUERY FUNCTION ---
+def query_db(query, args=(), one=False):
+    conn = get_db()
+    
+    if db_type == 'postgres':
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+    else:
         cur = conn.cursor()
-        
-        # 1. Users
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username TEXT NOT NULL,
-                email TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL,
-                phone TEXT,
-                address TEXT,
-                profile_pic TEXT,
-                xp INTEGER DEFAULT 0,
-                level INTEGER DEFAULT 1
-            )
-        ''')
-        
-        # 2. Tables
-        cur.execute('''CREATE TABLE IF NOT EXISTS transactions (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), type TEXT NOT NULL, category TEXT NOT NULL, amount REAL NOT NULL, date TEXT NOT NULL)''')
-        cur.execute('''CREATE TABLE IF NOT EXISTS accounts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), institution TEXT NOT NULL, account_name TEXT NOT NULL, type TEXT NOT NULL, balance REAL NOT NULL)''')
-        cur.execute('''CREATE TABLE IF NOT EXISTS bills (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), account_id INTEGER, bill_name TEXT NOT NULL, amount REAL NOT NULL, due_date TEXT NOT NULL, status TEXT DEFAULT 'unpaid')''')
-        cur.execute('''CREATE TABLE IF NOT EXISTS game_portfolio (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), symbol TEXT NOT NULL, company_name TEXT NOT NULL, quantity INTEGER DEFAULT 0, avg_price REAL NOT NULL, type TEXT DEFAULT 'stock')''')
-        cur.execute('''CREATE TABLE IF NOT EXISTS goals (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), title TEXT NOT NULL, category TEXT NOT NULL, target_amount REAL NOT NULL, current_amount REAL DEFAULT 0, deadline TEXT NOT NULL, priority TEXT DEFAULT 'Medium')''')
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS stock_market (
-                symbol TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                base_price REAL NOT NULL,
-                current_price REAL NOT NULL,
-                type TEXT NOT NULL,
-                sector TEXT
-            )
-        ''')
-
-        # 3. Seed Data
-        cur.execute('SELECT count(*) FROM stock_market')
-        if cur.fetchone()[0] == 0:
-            assets = [
-                ('RELIANCE', 'Reliance Industries', 2911.22, 'stock', 'Energy'), ('TCS', 'Tata Consultancy Svcs', 3876.99, 'stock', 'IT'), 
-                ('HDFCBANK', 'HDFC Bank', 1678.78, 'stock', 'Banking'), ('ZOMATO', 'Zomato Ltd', 165.40, 'stock', 'Tech'), 
-                ('PAYTM', 'One 97 Communications', 420.50, 'stock', 'Fintech'), ('TATAMOTORS', 'Tata Motors', 980.40, 'stock', 'Auto'), 
-                ('ITC', 'ITC Limited', 430.50, 'stock', 'FMCG'), ('ADANIENT', 'Adani Enterprises', 3150.00, 'stock', 'Metals'), 
-                ('INFY', 'Infosys', 1500.00, 'stock', 'IT'), ('WIPRO', 'Wipro', 450.00, 'stock', 'IT'),
-                ('SBISMALL', 'SBI Small Cap Fund', 145.20, 'mf', 'Equity'), ('HDFCTOP100', 'HDFC Top 100 Fund', 890.50, 'mf', 'Equity'), 
-                ('PARAGFLEXI', 'Parag Parikh Flexi Cap', 65.30, 'mf', 'Equity'), ('QUANTMID', 'Quant Mid Cap Fund', 210.15, 'mf', 'Equity'),
-                ('NIFTYBEES', 'Nippon India Nifty 50', 235.40, 'etf', 'Index'), ('GOLDBEES', 'Nippon India Gold', 56.80, 'etf', 'Gold'), 
-                ('BANKBEES', 'Nippon India Bank', 480.20, 'etf', 'Banking')
-            ]
-            for s in assets:
-                cur.execute('INSERT INTO stock_market (symbol, name, base_price, current_price, type, sector) VALUES (%s, %s, %s, %s, %s, %s)', 
-                            (s[0], s[1], s[2], s[2], s[3], s[4]))
-        
+        query = query.replace('%s', '?').replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
+    
+    try:
+        cur.execute(query, args)
+        rv = cur.fetchall()
         conn.commit()
         cur.close()
         conn.close()
-        return "<h1>Database Setup Complete! ✅</h1><p>You can now <a href='/signup'>Sign Up</a>.</p>"
-    
+        return (rv[0] if rv else None) if one else rv
     except Exception as e:
-        return f"<h1>Setup Failed ❌</h1><p>Error: {str(e)}</p>"
+        print(f"DB Error: {e}")
+        return None
 
-# --- FULL LESSON DATA ---
-LESSONS = {
-    'budgeting-101': {'title': 'Budgeting 101', 'video_id': 'sVKQn2I4EZM', 'content': '...', 'quiz': []},
-    # (Add full lesson content here if needed, shortened for stability)
-}
+# --- 3. INITIALIZATION & SEEDING ---
+def init_db():
+    # Tables
+    query_db('''CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT, email TEXT UNIQUE, password TEXT, phone TEXT, address TEXT, profile_pic TEXT, xp INTEGER DEFAULT 0, level INTEGER DEFAULT 1)''')
+    query_db('''CREATE TABLE IF NOT EXISTS transactions (id SERIAL PRIMARY KEY, user_id INTEGER, type TEXT, category TEXT, amount REAL, date TEXT)''')
+    query_db('''CREATE TABLE IF NOT EXISTS accounts (id SERIAL PRIMARY KEY, user_id INTEGER, institution TEXT, account_name TEXT, type TEXT, balance REAL)''')
+    query_db('''CREATE TABLE IF NOT EXISTS goals (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT, category TEXT, target_amount REAL, current_amount REAL, deadline TEXT, priority TEXT)''')
+    query_db('''CREATE TABLE IF NOT EXISTS stock_market (symbol TEXT PRIMARY KEY, name TEXT, base_price REAL, current_price REAL, type TEXT, sector TEXT)''')
+    query_db('''CREATE TABLE IF NOT EXISTS game_portfolio (id SERIAL PRIMARY KEY, user_id INTEGER, symbol TEXT, quantity INTEGER, avg_price REAL)''')
 
-# --- GLOBAL USER CONTEXT ---
+    # Seed Stocks
+    if not query_db('SELECT * FROM stock_market LIMIT 1', one=True):
+        assets = [
+            ('RELIANCE', 'Reliance Industries', 2911.22, 'stock', 'Energy'), ('TCS', 'Tata Consultancy', 3876.99, 'stock', 'IT'),
+            ('HDFCBANK', 'HDFC Bank', 1678.78, 'stock', 'Banking'), ('ZOMATO', 'Zomato', 165.40, 'stock', 'Tech'),
+            ('SBISMALL', 'SBI Small Cap', 145.20, 'mf', 'Equity'), ('NIFTYBEES', 'Nifty 50 ETF', 235.40, 'etf', 'Index')
+        ]
+        for a in assets:
+            query_db('INSERT INTO stock_market (symbol, name, base_price, current_price, type, sector) VALUES (%s, %s, %s, %s, %s, %s)', a)
+        print("Stocks Seeded")
+
+    # Seed Bots
+    if not query_db('SELECT * FROM users LIMIT 1', one=True):
+        bots = [('Aarav_Tech', 2500), ('Diya_Invests', 2100), ('Kabir_07', 1800)]
+        for name, xp in bots:
+            query_db('INSERT INTO users (username, email, password, xp, level) VALUES (%s, %s, %s, %s, %s)', (name, f"{name}@bot.com", "pass", xp, xp//500+1))
+        print("Bots Seeded")
+
+# Run Init
+if not os.environ.get('VERCEL'):
+    init_db()
+
+# --- 4. CONTEXT & HELPERS ---
 @app.context_processor
 def inject_user():
     if 'user_id' in session:
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
-            user = cur.fetchone()
-            cur.close(); conn.close()
-            return dict(user=user)
-        except: return dict(user=None)
+        user = query_db('SELECT * FROM users WHERE id = %s', (session['user_id'],), one=True)
+        return dict(user=user)
     return dict(user=None)
 
 @app.before_request
 def make_session_permanent():
     session.permanent = True
 
-# --- ROUTES ---
+# --- 5. ROUTES ---
 
+# AUTH
 @app.route('/')
 def home(): return render_template('index.html')
-
-@app.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    user_id = session['user_id']
-    
-    cur.execute('SELECT * FROM accounts WHERE user_id = %s', (user_id,))
-    accounts = cur.fetchall()
-    assets = sum(row['balance'] for row in accounts if row['type'] in ['bank', 'pf'])
-    liabilities = sum(row['balance'] for row in accounts if row['type'] in ['loan', 'credit'])
-    net_worth = assets - liabilities
-
-    cur.execute("SELECT SUM(amount) FROM transactions WHERE user_id = %s AND type = 'income'", (user_id,))
-    res_inc = cur.fetchone()['sum']
-    income = res_inc if res_inc else 0
-    
-    cur.execute("SELECT SUM(amount) FROM transactions WHERE user_id = %s AND type = 'expense'", (user_id,))
-    res_exp = cur.fetchone()['sum']
-    expense = res_exp if res_exp else 0
-    
-    cur.close(); conn.close()
-    return render_template('dashboard.html', username=session.get('username'), total_balance=f"₹{net_worth:,.0f}", income=f"₹{income:,.0f}", expense=f"₹{expense:,.0f}")
-
-@app.route('/accounts', methods=['GET', 'POST'])
-def accounts():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor); user_id = session['user_id']
-    
-    if request.method == 'POST':
-        if 'institution' in request.form:
-            cur.execute('INSERT INTO accounts (user_id, institution, account_name, type, balance) VALUES (%s, %s, %s, %s, %s)', 
-                       (user_id, request.form['institution'], request.form['account_name'], request.form['type'], float(request.form['balance'])))
-            conn.commit(); flash('Account added.')
-        elif 'trans_type' in request.form:
-            cur.execute('INSERT INTO transactions (user_id, type, category, amount, date) VALUES (%s, %s, %s, %s, %s)', 
-                       (user_id, request.form['trans_type'], request.form['category'], float(request.form['amount']), request.form['date']))
-            conn.commit(); flash('Transaction recorded.')
-        elif 'delete_account_id' in request.form:
-            cur.execute('DELETE FROM accounts WHERE id = %s AND user_id = %s', (request.form['delete_account_id'], user_id))
-            conn.commit()
-            
-    cur.execute('SELECT * FROM accounts WHERE user_id = %s', (user_id,))
-    accounts = cur.fetchall()
-    cur.execute('SELECT * FROM transactions WHERE user_id = %s ORDER BY date DESC LIMIT 10', (user_id,))
-    transactions = cur.fetchall()
-    
-    assets = sum(row['balance'] for row in accounts if row['type'] in ['bank', 'pf'])
-    liabilities = sum(row['balance'] for row in accounts if row['type'] in ['loan', 'credit'])
-    net_worth = assets - liabilities
-    
-    cur.close(); conn.close()
-    return render_template('accounts.html', accounts=accounts, transactions=transactions, net_worth=f"₹{net_worth:,.0f}", assets=f"₹{assets:,.0f}", liabilities=f"₹{liabilities:,.0f}", income=f"₹{0:,.0f}", expense=f"₹{0:,.0f}", savings=f"₹{0:,.0f}")
-
-@app.route('/goals', methods=['GET', 'POST'])
-def goals():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor); user_id = session['user_id']
-    if request.method == 'POST':
-        if 'title' in request.form:
-            cur.execute('INSERT INTO goals (user_id, title, category, target_amount, current_amount, deadline, priority) VALUES (%s, %s, %s, %s, %s, %s, %s)', 
-                       (user_id, request.form['title'], request.form['category'], float(request.form['target_amount']), float(request.form['current_amount']), request.form['deadline'], request.form['priority']))
-            conn.commit()
-        elif 'delete_goal_id' in request.form:
-            cur.execute('DELETE FROM goals WHERE id = %s AND user_id = %s', (request.form['delete_goal_id'], user_id)); conn.commit()
-        elif 'update_goal_id' in request.form:
-            cur.execute('UPDATE goals SET current_amount = current_amount + %s WHERE id = %s AND user_id = %s', (float(request.form['add_amount']), request.form['update_goal_id'], user_id)); conn.commit()
-    
-    cur.execute('SELECT * FROM goals WHERE user_id = %s ORDER BY deadline ASC', (user_id,))
-    goals_data = cur.fetchall()
-    total_target = sum(g['target_amount'] for g in goals_data)
-    total_saved = sum(g['current_amount'] for g in goals_data)
-    progress_pct = (total_saved / total_target * 100) if total_target > 0 else 0
-    
-    cur.close(); conn.close()
-    return render_template('goals.html', goals=goals_data, total_saved=f"₹{total_saved:,.0f}", progress_pct=round(progress_pct))
-
-@app.route('/simulations')
-def simulations():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    return render_template('simulations.html')
-
-@app.route('/simulations/stock-market')
-def stock_market_game():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    return render_template('games/stock_market.html')
-
-@app.route('/simulations/job-loss')
-def job_loss_game():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    return render_template('games/job_loss.html')
-
-@app.route('/simulations/crypto')
-def crypto_game():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    return render_template('games/crypto.html')
-
-@app.route('/lessons')
-def lessons():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    return render_template('lessons.html')
-
-@app.route('/lesson/<slug>')
-def lesson_view(slug):
-    if 'user_id' not in session: return redirect(url_for('login'))
-    lesson = LESSONS.get(slug)
-    if not lesson: return "Lesson not found", 404
-    
-    vid = lesson['video_id']
-    if 'youtube' in vid: vid = vid[-11:]
-    lesson['video_id'] = vid
-    return render_template('lesson_view.html', lesson=lesson, slug=slug)
-
-@app.route('/leaderboard')
-def leaderboard():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT username, xp, level FROM users ORDER BY xp DESC')
-    leaderboard_data = cur.fetchall()
-    cur.close(); conn.close()
-    return render_template('leaderboard.html', leaderboard=leaderboard_data, current_user=session.get('username'))
-
-@app.route('/profile', methods=['GET', 'POST'])
-def profile():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor); user_id = session['user_id']
-    if request.method == 'POST':
-        if 'username' in request.form:
-            if 'profile_pic' in request.files:
-                file = request.files['profile_pic']
-                if file.filename != '':
-                    filename = secure_filename(file.filename)
-                    # Use /tmp/ for Vercel compatibility if needed, or configured path
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    cur.execute('UPDATE users SET profile_pic = %s WHERE id = %s', (filename, user_id))
-            cur.execute('UPDATE users SET username = %s, phone = %s, address = %s WHERE id = %s', (request.form['username'], request.form['phone'], request.form['address'], user_id))
-            conn.commit(); session['username'] = request.form['username']; flash('Profile updated!')
-    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-    user = cur.fetchone()
-    cur.close(); conn.close()
-    return render_template('profile.html', user=user)
-
-@app.route('/api/market-data')
-def market_data():
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT * FROM stock_market')
-    assets = cur.fetchall()
-    updated_assets = []
-    for asset in assets:
-        volatility = 0.015 if asset['type'] == 'stock' else 0.005
-        change_percent = random.uniform(-volatility, volatility)
-        new_price = asset['current_price'] * (1 + change_percent)
-        cur.execute('UPDATE stock_market SET current_price = %s WHERE symbol = %s', (new_price, asset['symbol']))
-        updated_assets.append({'symbol': asset['symbol'], 'name': asset['name'], 'price': round(new_price, 2), 'type': asset['type'], 'change': round((new_price - asset['base_price']), 2), 'change_pct': round(((new_price - asset['base_price']) / asset['base_price']) * 100, 2)})
-    conn.commit(); cur.close(); conn.close()
-    return {'assets': updated_assets}
-
-@app.route('/api/trade', methods=['POST'])
-def place_trade():
-    if 'user_id' not in session: return {'error': 'Login required'}, 401
-    data = request.json
-    symbol = data['symbol']; action = data['action']; quantity = int(data['quantity']); price = float(data['price'])
-    conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor); user_id = session['user_id']
-    cur.execute('SELECT * FROM game_portfolio WHERE user_id = %s AND symbol = %s', (user_id, symbol))
-    existing = cur.fetchone()
-    if action == 'buy':
-        if existing:
-            new_qty = existing['quantity'] + quantity
-            new_avg = ((existing['quantity'] * existing['avg_price']) + (quantity * price)) / new_qty
-            cur.execute('UPDATE game_portfolio SET quantity = %s, avg_price = %s WHERE id = %s', (new_qty, new_avg, existing['id']))
-        else:
-            cur.execute('SELECT name FROM stock_market WHERE symbol = %s', (symbol,))
-            stock_info = cur.fetchone()
-            cur.execute('INSERT INTO game_portfolio (user_id, symbol, company_name, quantity, avg_price) VALUES (%s, %s, %s, %s, %s)', (user_id, symbol, stock_info['name'], quantity, price))
-    elif action == 'sell':
-        if not existing or existing['quantity'] < quantity: return {'success': False, 'message': 'Not enough shares!'}
-        new_qty = existing['quantity'] - quantity
-        if new_qty == 0: cur.execute('DELETE FROM game_portfolio WHERE id = %s', (existing['id'],))
-        else: cur.execute('UPDATE game_portfolio SET quantity = %s WHERE id = %s', (new_qty, existing['id']))
-    conn.commit()
-    cur.execute('SELECT * FROM game_portfolio WHERE user_id = %s', (user_id,))
-    updated_portfolio = cur.fetchall()
-    p_list = [{'symbol': p['symbol'], 'qty': p['quantity'], 'avg': p['avg_price']} for p in updated_portfolio]
-    cur.close(); conn.close()
-    return {'success': True, 'portfolio': p_list}
-
-@app.route('/api/earn-xp', methods=['POST'])
-def earn_xp():
-    if 'user_id' not in session: return {'error': 'Login required'}, 401
-    data = request.json
-    amount = data.get('amount', 0)
-    conn = get_db_connection(); cur = conn.cursor()
-    cur.execute('SELECT xp FROM users WHERE id = %s', (session['user_id'],))
-    row = cur.fetchone()
-    if row:
-        cur_xp = row[0]
-        new_xp = cur_xp + amount
-        new_level = new_xp // 500 + 1
-        cur.execute('UPDATE users SET xp = %s, level = %s WHERE id = %s', (new_xp, new_level, session['user_id']))
-        conn.commit()
-    cur.close(); conn.close()
-    return {'success': True, 'new_xp': new_xp}
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']; password = request.form['password']
-        conn = get_db_connection(); cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('SELECT * FROM users WHERE email = %s', (email,))
-        user = cur.fetchone()
-        cur.close(); conn.close()
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['id']; session['username'] = user['username']
+        user = query_db('SELECT * FROM users WHERE email = %s', (request.form['email'],), one=True)
+        if user and check_password_hash(user['password'], request.form['password']):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
             return redirect(url_for('dashboard'))
-        else: flash('Invalid email or password')
+        flash('Invalid credentials')
     return render_template('login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form['username']; email = request.form['email']; password = request.form['password']
         try:
-            conn = get_db_connection(); cur = conn.cursor()
-            cur.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s)', (username, email, generate_password_hash(password)))
-            conn.commit(); cur.close(); conn.close(); flash('Account created! Please login.')
+            query_db('INSERT INTO users (username, email, password) VALUES (%s, %s, %s)', 
+                    (request.form['username'], request.form['email'], generate_password_hash(request.form['password'])))
+            flash('Account created!')
             return redirect(url_for('login'))
-        except Exception as e: print(e); flash('Email already exists.')
+        except: flash('Email exists')
     return render_template('signup.html')
 
 @app.route('/logout')
 def logout(): session.clear(); return redirect(url_for('home'))
+
+# DASHBOARD
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    uid = session['user_id']
+    
+    # Financials
+    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,))
+    assets = sum(a['balance'] for a in accts if a['type'] in ['bank','pf'])
+    liabilities = sum(a['balance'] for a in accts if a['type'] in ['loan','credit'])
+    
+    # Cash Flow
+    inc = query_db("SELECT SUM(amount) as s FROM transactions WHERE user_id=%s AND type='income'", (uid,), one=True)
+    exp = query_db("SELECT SUM(amount) as s FROM transactions WHERE user_id=%s AND type='expense'", (uid,), one=True)
+    income = inc['s'] if inc and inc['s'] else 0
+    expense = exp['s'] if exp and exp['s'] else 0
+
+    return render_template('dashboard.html', username=session['username'], 
+                          total_balance=f"₹{assets-liabilities:,.0f}", income=f"₹{income:,.0f}", expense=f"₹{expense:,.0f}")
+
+# ACCOUNTS
+@app.route('/accounts', methods=['GET', 'POST'])
+def accounts():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    uid = session['user_id']
+    if request.method == 'POST':
+        if 'institution' in request.form:
+            query_db('INSERT INTO accounts (user_id, institution, account_name, type, balance) VALUES (%s,%s,%s,%s,%s)',
+                    (uid, request.form['institution'], request.form['account_name'], request.form['type'], float(request.form['balance'])))
+        elif 'trans_type' in request.form:
+            query_db('INSERT INTO transactions (user_id, type, category, amount, date) VALUES (%s,%s,%s,%s,%s)',
+                    (uid, request.form['trans_type'], request.form['category'], float(request.form['amount']), request.form['date']))
+    
+    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,))
+    trans = query_db('SELECT * FROM transactions WHERE user_id = %s ORDER BY date DESC LIMIT 5', (uid,))
+    
+    assets = sum(a['balance'] for a in accts if a['type'] in ['bank','pf'])
+    liab = sum(a['balance'] for a in accts if a['type'] in ['loan','credit'])
+    
+    return render_template('accounts.html', accounts=accts, transactions=trans, 
+                          net_worth=f"₹{assets-liab:,.0f}", assets=f"₹{assets:,.0f}", liabilities=f"₹{liab:,.0f}")
+
+# GOALS
+@app.route('/goals', methods=['GET', 'POST'])
+def goals():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    uid = session['user_id']
+    if request.method == 'POST':
+        if 'title' in request.form:
+            query_db('INSERT INTO goals (user_id, title, category, target_amount, current_amount, deadline, priority) VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                    (uid, request.form['title'], request.form['category'], float(request.form['target_amount']), float(request.form['current_amount']), request.form['deadline'], request.form['priority']))
+        elif 'add_amount' in request.form:
+             query_db('UPDATE goals SET current_amount = current_amount + %s WHERE id=%s', (float(request.form['add_amount']), request.form['update_goal_id']))
+    
+    goals = query_db('SELECT * FROM goals WHERE user_id = %s ORDER BY deadline', (uid,))
+    saved = sum(g['current_amount'] for g in goals)
+    target = sum(g['target_amount'] for g in goals)
+    pct = (saved/target*100) if target > 0 else 0
+    return render_template('goals.html', goals=goals, total_saved=f"₹{saved:,.0f}", progress_pct=int(pct))
+
+# SIMULATIONS
+@app.route('/simulations')
+def simulations(): return render_template('simulations.html')
+
+@app.route('/simulations/stock-market')
+def stock_market_game(): return render_template('games/stock_market.html')
+
+@app.route('/simulations/job-loss')
+def job_loss_game(): return render_template('games/job_loss.html')
+
+@app.route('/simulations/crypto')
+def crypto_game(): return render_template('games/crypto.html')
+
+# LEADERBOARD
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    # Get top users
+    users = query_db('SELECT username, xp, level FROM users ORDER BY xp DESC LIMIT 10')
+    return render_template('leaderboard.html', leaderboard=users, current_user=session.get('username'))
+
+# PROFILE
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    uid = session['user_id']
+    if request.method == 'POST':
+        if 'username' in request.form:
+            query_db('UPDATE users SET username=%s, phone=%s, address=%s WHERE id=%s', 
+                    (request.form['username'], request.form['phone'], request.form['address'], uid))
+            session['username'] = request.form['username']
+            
+            if 'profile_pic' in request.files:
+                f = request.files['profile_pic']
+                if f.filename:
+                    fname = secure_filename(f.filename)
+                    f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                    query_db('UPDATE users SET profile_pic=%s WHERE id=%s', (fname, uid))
+            flash('Updated!')
+    
+    user = query_db('SELECT * FROM users WHERE id=%s', (uid,), one=True)
+    return render_template('profile.html', user=user)
+
+# LESSONS
+LESSONS = {
+    'budgeting-101': {'title': 'Budgeting 101', 'video_id': 'sVKQn2I4EZM', 'content': '<p>Content...</p>', 'quiz': []},
+    'investing-basics': {'title': 'Stock Market Basics', 'video_id': 'p7HKvqRI_Bo', 'content': '<p>Content...</p>', 'quiz': []}
+    # Add other lessons similarly
+}
+
+@app.route('/lessons')
+def lessons(): return render_template('lessons.html')
+
+@app.route('/lesson/<slug>')
+def lesson_view(slug):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    lesson = LESSONS.get(slug, {'title': 'Lesson', 'video_id': '', 'content': 'Coming soon', 'quiz': []})
+    return render_template('lesson_view.html', lesson=lesson, slug=slug)
+
+@app.route('/coach')
+def coach(): return render_template('coach.html', username=session.get('username'))
+
+# API
+@app.route('/api/market-data')
+def market_data():
+    assets = query_db('SELECT * FROM stock_market')
+    data = []
+    for a in assets:
+        # Simulate movement
+        move = (random.random() - 0.5) * 0.02 * a['base_price']
+        new_p = a['current_price'] + move
+        query_db('UPDATE stock_market SET current_price=%s WHERE symbol=%s', (new_p, a['symbol']))
+        change = new_p - a['base_price']
+        data.append({
+            'symbol': a['symbol'], 'name': a['name'], 'price': new_p, 'type': a['type'],
+            'change': round(change, 2), 'change_pct': round((change/a['base_price'])*100, 2)
+        })
+    return {'assets': data}
+
+@app.route('/api/trade', methods=['POST'])
+def api_trade():
+    uid = session['user_id']
+    data = request.json
+    qty = int(data['quantity'])
+    price = float(data['price'])
+    symbol = data['symbol']
+    
+    existing = query_db('SELECT * FROM game_portfolio WHERE user_id=%s AND symbol=%s', (uid, symbol), one=True)
+    
+    if data['action'] == 'buy':
+        if existing:
+            new_q = existing['quantity'] + qty
+            new_avg = ((existing['quantity']*existing['avg_price']) + (qty*price)) / new_q
+            query_db('UPDATE game_portfolio SET quantity=%s, avg_price=%s WHERE id=%s', (new_q, new_avg, existing['id']))
+        else:
+            name = query_db('SELECT name FROM stock_market WHERE symbol=%s', (symbol,), one=True)['name']
+            query_db('INSERT INTO game_portfolio (user_id, symbol, company_name, quantity, avg_price) VALUES (%s,%s,%s,%s,%s)', (uid, symbol, name, qty, price))
+    else:
+        new_q = existing['quantity'] - qty
+        if new_q <= 0: query_db('DELETE FROM game_portfolio WHERE id=%s', (existing['id'],))
+        else: query_db('UPDATE game_portfolio SET quantity=%s WHERE id=%s', (new_q, existing['id']))
+    
+    port = query_db('SELECT * FROM game_portfolio WHERE user_id=%s', (uid,))
+    return {'success': True, 'portfolio': [{'symbol': p['symbol'], 'qty': p['quantity'], 'avg': p['avg_price']} for p in port]}
+
+@app.route('/api/earn-xp', methods=['POST'])
+def api_xp():
+    uid = session['user_id']
+    amt = request.json.get('amount', 0)
+    user = query_db('SELECT xp FROM users WHERE id=%s', (uid,), one=True)
+    new_xp = user['xp'] + amt
+    query_db('UPDATE users SET xp=%s, level=%s WHERE id=%s', (new_xp, new_xp//500+1, uid))
+    return {'success': True}
 
 if __name__ == '__main__':
     app.run(debug=True)
