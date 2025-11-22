@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Hub | FinWise</title>
+    <title>Financial Hub | RupeeVerse</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -11,8 +11,8 @@
 
     <header>
         <div class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FinWise" style="height: 40px;">
-            FinWise
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RupeeVerse" style="height: 40px;">
+            RupeeVerse
         </div>
         <nav>
             <ul>
@@ -252,7 +252,7 @@
             var encodedUri = encodeURI(csvContent);
             var link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "finwise_summary.csv");
+            link.setAttribute("download", "rupeeverse_summary.csv");
             document.body.appendChild(link);
             link.click();
         }

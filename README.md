@@ -1,10 +1,10 @@
-# 🚀 FinWise - Master Money Through Gaming
+# 🚀 RupeeVerse - Master Money Through Gaming
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![Flask](https://img.shields.io/badge/Framework-Flask-green.svg)
 ![Status](https://img.shields.io/badge/Status-Live-orange.svg)
 
-**FinWise** is a gamified financial literacy platform designed for Indian youth. It bridges the gap between theory and practice by offering risk-free simulations, interactive lessons, and a comprehensive financial dashboard.
+**RupeeVerse** is a gamified financial literacy platform designed for Indian youth. It bridges the gap between theory and practice by offering risk-free simulations, interactive lessons, and a comprehensive financial dashboard.
 
 ---
 
@@ -43,7 +43,7 @@
 
 ## 🚀 Getting Started
 
-Follow these steps to run FinWise locally on your machine.
+Follow these steps to run RupeeVerse locally on your machine.
 
 ### Prerequisites
 * Python 3.x installed.
