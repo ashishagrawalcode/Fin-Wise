@@ -94,8 +94,7 @@ def init_db():
         print("Bots Seeded")
 
 # Run Init Locally
-if not os.environ.get('VERCEL'):
-    init_db()
+init_db()
 
 # --- DATA ---
 LESSONS = {
