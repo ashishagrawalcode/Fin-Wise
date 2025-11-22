@@ -10,7 +10,6 @@ app.secret_key = os.environ.get('SECRET_KEY', 'rupeeverse_secret_key')
 app.permanent_session_lifetime = timedelta(days=30)
 
 # --- FIX FOR VERCEL (Read-Only System) ---
-# We use the temporary folder '/tmp' for uploads on Vercel
 if os.environ.get('VERCEL'):
     UPLOAD_FOLDER = '/tmp'
 else:
@@ -20,21 +19,22 @@ else:
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- DATABASE SELECTOR ---
-# If DATABASE_URL exists (Vercel), use Postgres. Otherwise SQLite.
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# FIX: Convert postgres:// to postgresql:// for compatibility
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 if DATABASE_URL:
     import psycopg2
     from psycopg2.extras import RealDictCursor
     def get_db():
-        # Connect to Supabase
         conn = psycopg2.connect(DATABASE_URL)
         return conn
     db_type = 'postgres'
 else:
     import sqlite3
     def get_db():
-        # Connect to Local File
         conn = sqlite3.connect('finwise.db')
         conn.row_factory = sqlite3.Row
         return conn
@@ -47,7 +47,6 @@ def query_db(query, args=(), one=False, commit=False):
         cur = conn.cursor(cursor_factory=RealDictCursor)
     else:
         cur = conn.cursor()
-        # Translate Postgres syntax (%s) to SQLite syntax (?)
         query = query.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
         query = query.replace('%s', '?')
     
@@ -64,23 +63,25 @@ def query_db(query, args=(), one=False, commit=False):
         return rv
     except Exception as e:
         print(f"DB Error: {e}")
+        conn.close()  # FIX: Always close connection on error
         return None
 
-# --- INIT DB ---
+# --- INIT DB (FIXED game_portfolio table) ---
 def init_db():
-    # Create Tables
     tables = [
         '''CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT, email TEXT UNIQUE, password TEXT, phone TEXT, address TEXT, profile_pic TEXT, xp INTEGER DEFAULT 0, level INTEGER DEFAULT 1)''',
         '''CREATE TABLE IF NOT EXISTS transactions (id SERIAL PRIMARY KEY, user_id INTEGER, type TEXT, category TEXT, amount REAL, date TEXT)''',
         '''CREATE TABLE IF NOT EXISTS accounts (id SERIAL PRIMARY KEY, user_id INTEGER, institution TEXT, account_name TEXT, type TEXT, balance REAL)''',
-        '''CREATE TABLE IF NOT EXISTS game_portfolio (id SERIAL PRIMARY KEY, user_id INTEGER, symbol TEXT, quantity INTEGER, avg_price REAL)''',
+        # FIX: Added company_name column to match INSERT statement
+        '''CREATE TABLE IF NOT EXISTS game_portfolio (id SERIAL PRIMARY KEY, user_id INTEGER, symbol TEXT, company_name TEXT, quantity INTEGER, avg_price REAL)''',
         '''CREATE TABLE IF NOT EXISTS goals (id SERIAL PRIMARY KEY, user_id INTEGER, title TEXT, category TEXT, target_amount REAL, current_amount REAL, deadline TEXT, priority TEXT)''',
         '''CREATE TABLE IF NOT EXISTS stock_market (symbol TEXT PRIMARY KEY, name TEXT, base_price REAL, current_price REAL, type TEXT, sector TEXT)'''
     ]
     for t in tables: query_db(t, commit=True)
 
-    # Seed Stocks
     existing = query_db('SELECT count(*) as c FROM stock_market', one=True)
+    if existing is None:
+        return  # Table might not exist yet
     count = existing['c'] if db_type == 'postgres' else existing[0]
     
     if count == 0:
@@ -94,11 +95,9 @@ def init_db():
         for a in assets:
             query_db('INSERT INTO stock_market (symbol, name, base_price, current_price, type, sector) VALUES (%s, %s, %s, %s, %s, %s)', a, commit=True)
 
-# Run Init Locally
 if not DATABASE_URL:
     init_db()
 
-# --- SPECIAL SETUP ROUTE FOR VERCEL ---
 @app.route('/setup')
 def setup():
     try:
@@ -109,51 +108,15 @@ def setup():
 
 # --- LESSON CONTENT ---
 LESSONS = {
-    'budgeting-101': {
-        'title': 'Budgeting 101: Why It Matters',
-        'video_id': 'sVKQn2I4EZM', 
-        'content': """<h3>The Foundation</h3><p>A budget is simply a plan for your money. It tells your money where to go instead of wondering where it went.</p>""",
-        'quiz': [{'q': 'Budgets are for:', 'options': ['Restriction', 'Planning', 'Banks'], 'correct': 1}]
-    },
-    'rule-50-30-20': {
-        'title': 'The 50/30/20 Rule',
-        'video_id': 'HQzoZfc3GwQ',
-        'content': """<h3>The Golden Ratio</h3><p>Allocate your income: <b>50% Needs</b> (Rent, Food), <b>30% Wants</b> (Fun, Netflix), <b>20% Savings</b> (Investments).</p>""",
-        'quiz': [{'q': 'What % goes to Savings?', 'options': ['50%', '30%', '20%'], 'correct': 2}]
-    },
-    'emergency-fund': {
-        'title': 'Emergency Fund Essentials',
-        'video_id': 'C4r-tK5d5s0', 
-        'content': """<h3>Why you need it</h3><p>Life is unpredictable. An emergency fund of 3-6 months expenses prevents you from going into debt during a crisis.</p>""",
-        'quiz': [{'q': 'How many months of expenses should you save?', 'options': ['1 month', '3-6 months', '1 year'], 'correct': 1}]
-    },
-    'investing-basics': {
-        'title': 'Stock Market Basics',
-        'video_id': 'p7HKvqRI_Bo',
-        'content': """<h3>Ownership</h3><p>Stocks represent partial ownership in a company. Over the long term (10+ years), equities historically beat inflation.</p>""",
-        'quiz': [{'q': 'Stocks represent:', 'options': ['Loans', 'Ownership', 'Gambling'], 'correct': 1}]
-    },
-    'credit-scores': {
-        'title': 'Credit Scores Explained',
-        'video_id': '3U1piLk-x3U',
-        'content': """<h3>Your Financial Reputation</h3><p>A CIBIL score above 750 gets you cheaper loans. Pay bills on time and keep credit utilization low to boost it.</p>""",
-        'quiz': [{'q': 'What is a good CIBIL score?', 'options': ['300', '600', '750+'], 'correct': 2}]
-    },
-    'indian-tax': {
-        'title': 'Indian Tax System Basics',
-        'video_id': '7s7xM-X', 
-        'content': """<h3>Tax Slabs</h3><p>Understanding Old vs New Regime is crucial. Taxes fund public services, but smart planning (80C, 80D) can save you money.</p>""",
-        'quiz': [{'q': 'Which section covers PPF/EPF?', 'options': ['80C', '80D', '90A'], 'correct': 0}]
-    },
-    'insurance': {
-        'title': 'Insurance: Financial Safety Net',
-        'video_id': 'X3', 
-        'content': """<h3>Risk Transfer</h3><p>Insurance transfers the financial risk of life/health events to a company. Never mix insurance with investment (Endowment).</p>""",
-        'quiz': [{'q': 'Primary purpose of insurance?', 'options': ['Investment', 'Risk Protection', 'Tax Saving'], 'correct': 1}]
-    }
+    'budgeting-101': {'title': 'Budgeting 101: Why It Matters', 'video_id': 'sVKQn2I4EZM', 'content': """<h3>The Foundation</h3><p>A budget is simply a plan for your money.</p>""", 'quiz': [{'q': 'Budgets are for:', 'options': ['Restriction', 'Planning', 'Banks'], 'correct': 1}]},
+    'rule-50-30-20': {'title': 'The 50/30/20 Rule', 'video_id': 'HQzoZfc3GwQ', 'content': """<h3>The Golden Ratio</h3><p>Allocate: 50% Needs, 30% Wants, 20% Savings.</p>""", 'quiz': [{'q': 'What % goes to Savings?', 'options': ['50%', '30%', '20%'], 'correct': 2}]},
+    'emergency-fund': {'title': 'Emergency Fund Essentials', 'video_id': 'C4r-tK5d5s0', 'content': """<h3>Why you need it</h3><p>3-6 months expenses prevents debt during crisis.</p>""", 'quiz': [{'q': 'How many months?', 'options': ['1 month', '3-6 months', '1 year'], 'correct': 1}]},
+    'investing-basics': {'title': 'Stock Market Basics', 'video_id': 'p7HKvqRI_Bo', 'content': """<h3>Ownership</h3><p>Stocks = partial ownership in a company.</p>""", 'quiz': [{'q': 'Stocks represent:', 'options': ['Loans', 'Ownership', 'Gambling'], 'correct': 1}]},
+    'credit-scores': {'title': 'Credit Scores Explained', 'video_id': '3U1piLk-x3U', 'content': """<h3>Your Financial Reputation</h3><p>CIBIL 750+ gets cheaper loans.</p>""", 'quiz': [{'q': 'Good CIBIL score?', 'options': ['300', '600', '750+'], 'correct': 2}]},
+    'indian-tax': {'title': 'Indian Tax System Basics', 'video_id': '7s7xM-X', 'content': """<h3>Tax Slabs</h3><p>80C, 80D save money.</p>""", 'quiz': [{'q': 'Which section covers PPF?', 'options': ['80C', '80D', '90A'], 'correct': 0}]},
+    'insurance': {'title': 'Insurance: Financial Safety Net', 'video_id': 'X3', 'content': """<h3>Risk Transfer</h3><p>Never mix insurance with investment.</p>""", 'quiz': [{'q': 'Purpose of insurance?', 'options': ['Investment', 'Risk Protection', 'Tax Saving'], 'correct': 1}]}
 }
 
-# --- CONTEXT & HELPERS ---
 @app.context_processor
 def inject_user():
     if 'user_id' in session:
@@ -165,7 +128,6 @@ def inject_user():
 def make_session_permanent():
     session.permanent = True
 
-# --- ROUTES ---
 @app.route('/')
 def home(): return render_template('index.html')
 
@@ -173,12 +135,16 @@ def home(): return render_template('index.html')
 def login():
     if request.method == 'POST':
         user = query_db('SELECT * FROM users WHERE email = %s', (request.form['email'],), one=True)
-        # Handle dict vs tuple
+        # FIX: Check if user exists before accessing fields
+        if user is None:
+            flash('Invalid credentials')
+            return render_template('login.html')
+        
         pass_hash = user['password'] if isinstance(user, dict) else user[3]
         uid = user['id'] if isinstance(user, dict) else user[0]
         uname = user['username'] if isinstance(user, dict) else user[1]
 
-        if user and check_password_hash(pass_hash, request.form['password']):
+        if check_password_hash(pass_hash, request.form['password']):
             session['user_id'] = uid
             session['username'] = uname
             return redirect(url_for('dashboard'))
@@ -193,7 +159,9 @@ def signup():
                     (request.form['username'], request.form['email'], generate_password_hash(request.form['password'])), commit=True)
             flash('Created! Login now.')
             return redirect(url_for('login'))
-        except: flash('Email exists')
+        except Exception as e:
+            print(f"Signup error: {e}")
+            flash('Email exists')
     return render_template('signup.html')
 
 @app.route('/logout')
@@ -204,13 +172,13 @@ def dashboard():
     if 'user_id' not in session: return redirect(url_for('login'))
     uid = session['user_id']
     
-    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,))
+    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,)) or []
     assets = sum(a['balance'] if isinstance(a, dict) else a[5] for a in accts if (a['type'] if isinstance(a, dict) else a[4]) in ['bank','pf'])
     liab = sum(a['balance'] if isinstance(a, dict) else a[5] for a in accts if (a['type'] if isinstance(a, dict) else a[4]) in ['loan','credit'])
     
-    trans = query_db('SELECT type, amount FROM transactions WHERE user_id = %s', (uid,))
-    income = sum(t['amount'] if isinstance(t, dict) else t[4] for t in trans if (t['type'] if isinstance(t, dict) else t[2]) == 'income')
-    expense = sum(t['amount'] if isinstance(t, dict) else t[4] for t in trans if (t['type'] if isinstance(t, dict) else t[2]) == 'expense')
+    trans = query_db('SELECT type, amount FROM transactions WHERE user_id = %s', (uid,)) or []
+    income = sum(t['amount'] if isinstance(t, dict) else t[1] for t in trans if (t['type'] if isinstance(t, dict) else t[0]) == 'income')
+    expense = sum(t['amount'] if isinstance(t, dict) else t[1] for t in trans if (t['type'] if isinstance(t, dict) else t[0]) == 'expense')
 
     return render_template('dashboard.html', username=session['username'], 
                           total_balance=f"₹{assets-liab:,.0f}", income=f"₹{income:,.0f}", expense=f"₹{expense:,.0f}")
@@ -229,8 +197,8 @@ def accounts():
         elif 'delete_account_id' in request.form:
             query_db('DELETE FROM accounts WHERE id=%s AND user_id=%s', (request.form['delete_account_id'], uid), commit=True)
     
-    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,))
-    trans = query_db('SELECT * FROM transactions WHERE user_id = %s ORDER BY date DESC LIMIT 5', (uid,))
+    accts = query_db('SELECT * FROM accounts WHERE user_id = %s', (uid,)) or []
+    trans = query_db('SELECT * FROM transactions WHERE user_id = %s ORDER BY date DESC LIMIT 5', (uid,)) or []
     assets = sum(a['balance'] if isinstance(a, dict) else a[5] for a in accts if (a['type'] if isinstance(a, dict) else a[4]) in ['bank','pf'])
     liab = sum(a['balance'] if isinstance(a, dict) else a[5] for a in accts if (a['type'] if isinstance(a, dict) else a[4]) in ['loan','credit'])
     
@@ -247,11 +215,11 @@ def goals():
         elif 'add_amount' in request.form:
              query_db('UPDATE goals SET current_amount = current_amount + %s WHERE id=%s', (float(request.form['add_amount']), request.form['update_goal_id']), commit=True)
     
-    goals = query_db('SELECT * FROM goals WHERE user_id = %s ORDER BY deadline', (uid,))
-    saved = sum(g['current_amount'] if isinstance(g, dict) else g[5] for g in goals)
-    target = sum(g['target_amount'] if isinstance(g, dict) else g[4] for g in goals)
+    goals_list = query_db('SELECT * FROM goals WHERE user_id = %s ORDER BY deadline', (uid,)) or []
+    saved = sum(g['current_amount'] if isinstance(g, dict) else g[5] for g in goals_list)
+    target = sum(g['target_amount'] if isinstance(g, dict) else g[4] for g in goals_list)
     pct = (saved/target*100) if target > 0 else 0
-    return render_template('goals.html', goals=goals, total_saved=f"₹{saved:,.0f}", progress_pct=int(pct))
+    return render_template('goals.html', goals=goals_list, total_saved=f"₹{saved:,.0f}", progress_pct=int(pct))
 
 @app.route('/simulations')
 def simulations(): return render_template('simulations.html') if 'user_id' in session else redirect(url_for('login'))
@@ -274,7 +242,7 @@ def lesson_view(slug):
 @app.route('/leaderboard')
 def leaderboard():
     if 'user_id' not in session: return redirect(url_for('login'))
-    users = query_db('SELECT username, xp, level FROM users ORDER BY xp DESC LIMIT 10')
+    users = query_db('SELECT username, xp, level FROM users ORDER BY xp DESC LIMIT 10') or []
     return render_template('leaderboard.html', leaderboard=users, current_user=session.get('username'))
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -295,10 +263,9 @@ def coach(): return render_template('coach.html', username=session.get('username
 
 @app.route('/api/market-data')
 def market_data():
-    assets = query_db('SELECT * FROM stock_market')
+    assets = query_db('SELECT * FROM stock_market') or []
     data = []
     for a in assets:
-        # Handle dict vs tuple
         price = a['current_price'] if isinstance(a, dict) else a[3]
         base = a['base_price'] if isinstance(a, dict) else a[2]
         symbol = a['symbol'] if isinstance(a, dict) else a[0]
@@ -317,12 +284,13 @@ def market_data():
 
 @app.route('/api/trade', methods=['POST'])
 def api_trade():
+    if 'user_id' not in session:
+        return {'success': False, 'error': 'Not logged in'}, 401
     uid = session['user_id']
     data = request.json
     qty = int(data['quantity']); price = float(data['price']); symbol = data['symbol']
     
     existing = query_db('SELECT * FROM game_portfolio WHERE user_id=%s AND symbol=%s', (uid, symbol), one=True)
-    # Handle dict vs tuple
     eid = existing['id'] if isinstance(existing, dict) else existing[0] if existing else None
     eqty = existing['quantity'] if isinstance(existing, dict) else existing[4] if existing else 0
     eavg = existing['avg_price'] if isinstance(existing, dict) else existing[5] if existing else 0
@@ -334,15 +302,14 @@ def api_trade():
             query_db('UPDATE game_portfolio SET quantity=%s, avg_price=%s WHERE id=%s', (new_q, new_avg, eid), commit=True)
         else:
             sdata = query_db('SELECT name FROM stock_market WHERE symbol=%s', (symbol,), one=True)
-            sname = sdata['name'] if isinstance(sdata, dict) else sdata[1]
+            sname = sdata['name'] if isinstance(sdata, dict) else sdata[1] if sdata else symbol
             query_db('INSERT INTO game_portfolio (user_id, symbol, company_name, quantity, avg_price) VALUES (%s,%s,%s,%s,%s)', (uid, symbol, sname, qty, price), commit=True)
     else:
         new_q = eqty - qty
         if new_q <= 0: query_db('DELETE FROM game_portfolio WHERE id=%s', (eid,), commit=True)
         else: query_db('UPDATE game_portfolio SET quantity=%s WHERE id=%s', (new_q, eid), commit=True)
     
-    port = query_db('SELECT * FROM game_portfolio WHERE user_id=%s', (uid,))
-    # Serialize
+    port = query_db('SELECT * FROM game_portfolio WHERE user_id=%s', (uid,)) or []
     p_list = []
     for p in port:
         p_list.append({
@@ -354,10 +321,12 @@ def api_trade():
 
 @app.route('/api/earn-xp', methods=['POST'])
 def api_xp():
+    if 'user_id' not in session:
+        return {'success': False, 'error': 'Not logged in'}, 401
     uid = session['user_id']
     amt = request.json.get('amount', 0)
     user = query_db('SELECT xp FROM users WHERE id=%s', (uid,), one=True)
-    cur_xp = user['xp'] if isinstance(user, dict) else user[7]
+    cur_xp = user['xp'] if isinstance(user, dict) else user[0] if user else 0
     new_xp = cur_xp + amt
     query_db('UPDATE users SET xp=%s, level=%s WHERE id=%s', (new_xp, new_xp//500+1, uid), commit=True)
     return {'success': True}
